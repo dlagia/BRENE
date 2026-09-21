@@ -102,6 +102,66 @@ fi
 # Remove fake_files folder
 [[ -d "${PERSISTENT_DIR}/fake_files" ]] && rm -rf "${PERSISTENT_DIR}/fake_files"
 
+# ============================================================================
+# Tambahan fork dlagia (lihat docs/AUDIT-KERNEL-DLAGIA.md)
+# ============================================================================
+# 1. Serah-terima kendali SuSFS dari ksud ke BRENE.
+#    ReSukiSU/SukiSU punya manajer SuSFS sendiri di dalam ksud
+#    (`ksud susfs config`) dan defaultnya AKTIF. Pada boot-completed manajer itu
+#    jalan SESUDAH script modul, lalu menerapkan config-nya sendiri (cmdline
+#    kosong, sus_path kosong, dst) sehingga bisa menimpa yang baru dipasang
+#    BRENE. Matikan sekali di sini. ksud hanya melepas hard link ksu_susfs
+#    miliknya sendiri; symlink ksu_susfs punya BRENE di atas tidak diganggu.
+#    Fork KernelSU tanpa subcommand ini akan gagal di sini, dan itu tidak apa-apa.
+if ${KSU_BIN} susfs config disable > /dev/null 2>&1; then
+	echo '[✅] Manajer SuSFS bawaan ksud dimatikan, BRENE yang pegang kendali'
+else
+	echo '[ℹ️] ksud tanpa manajer SuSFS bawaan, langkah ini dilewati'
+fi
+
+# 2. Cocokkan toggle yang menyala di config.sh dengan fitur SuSFS yang benar-
+#    benar dikompilasi di kernel. Tidak fatal: toggle tanpa dukungan kernel
+#    hanya diam-diam tidak berefek, jadi lebih baik dilaporkan saat install.
+enabled_features=$(${SUSFS_BIN} show enabled_features 2> /dev/null)
+missing_features=0
+config_needs="
+config_paths_hiding__non_standard_sdcard=CONFIG_KSU_SUSFS_SUS_PATH
+config_paths_hiding__non_standard_sdcard_android=CONFIG_KSU_SUSFS_SUS_PATH
+config_paths_hiding__data_local_tmp=CONFIG_KSU_SUSFS_SUS_PATH
+config_hide_custom_recovery=CONFIG_KSU_SUSFS_SUS_PATH
+config_hide_suspicious_pty=CONFIG_KSU_SUSFS_SUS_PATH
+config_hide_custom_rom_paths=CONFIG_KSU_SUSFS_SUS_PATH
+config_hide_custom_rom_paths_2=CONFIG_KSU_SUSFS_SUS_PATH
+config_hide_addon_d=CONFIG_KSU_SUSFS_SUS_MAP
+config_hide_framework_res_apk=CONFIG_KSU_SUSFS_SUS_MAP
+config_hide_sus_mnts_for_non_su_procs=CONFIG_KSU_SUSFS_SUS_MOUNT
+config_fix_data_local_tmp_inconsistencies=CONFIG_KSU_SUSFS_SUS_KSTAT
+config_spoof_hosts=CONFIG_KSU_SUSFS_SUS_KSTAT
+config_spoof_uname=CONFIG_KSU_SUSFS_SPOOF_UNAME
+config_custom_spoof_uname=CONFIG_KSU_SUSFS_SPOOF_UNAME
+config_spoof_cmdline_or_bootconfig=CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+config_spoof_libstagefright=CONFIG_KSU_SUSFS_OPEN_REDIRECT
+config_hide_lineage_strings=CONFIG_KSU_SUSFS_OPEN_REDIRECT
+config_enable_log=CONFIG_KSU_SUSFS_ENABLE_LOG
+"
+for pair in ${config_needs}; do
+	config_key=${pair%%=*}
+	needed_feature=${pair#*=}
+
+	[[ "$(grep -m1 "^${config_key}=" "${PERSISTENT_DIR}/config.sh" | cut -d'=' -f2)" == "1" ]] || continue
+
+	if ! echo "${enabled_features}" | grep -q "^${needed_feature}$"; then
+		echo "[⚠️] ${config_key}=1 butuh ${needed_feature}, kernel ini tidak punya - toggle itu tidak akan berefek"
+		missing_features=$((missing_features + 1))
+	fi
+done
+
+if [[ "${missing_features}" == "0" ]]; then
+	echo "[✅] Semua toggle yang menyala didukung kernel (${susfs_features_number} fitur SuSFS aktif)"
+else
+	echo "[⚠️] ${missing_features} toggle tidak didukung kernel, matikan lewat WebUI atau bangun ulang kernel dengan fitur itu"
+fi
+
 # Enable WebUI without reboot
 MODDIR="/data/adb/modules/brene"
 MODULES_PATH="/data/adb/modules"
