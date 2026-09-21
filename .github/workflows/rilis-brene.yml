@@ -1,0 +1,135 @@
+# Workflow rilis untuk fork dlagia/BRENE.
+#
+# Upstream (rrr333nnn333/BRENE) membangun zip-nya manual, jadi fork ini tidak
+# punya rilis sama sekali - padahal update.json + module.prop menunjuk ke
+# rilis "latest" repo ini. Tanpa workflow ini tombol update di manager KernelSU
+# akan 404 dan tidak ada zip yang bisa di-flash.
+#
+# Job "audit" sengaja dibuat gagal-keras supaya kesalahan yang pernah ditemukan
+# saat audit tidak bisa masuk diam-diam lagi:
+#   - update.json masih menunjuk repo upstream (fork ketimpa update upstream),
+#   - versi module.prop dan update.json tidak sinkron,
+#   - script modul rusak sintaksnya atau kena temuan shellcheck level error,
+#   - toggle config_* dipakai script tapi tidak ada di config.sh (atau sebaliknya),
+#   - tools/susfs bukan lagi ELF arm64.
+name: Rilis BRENE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - module/**
+      - update.json
+      - .github/workflows/rilis-brene.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    name: Audit modul
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Sintaks + shellcheck semua script modul
+        run: |
+          set -eu
+          for f in module/*.sh; do
+            bash -n "$f" || { echo "ERROR: sintaks $f rusak"; exit 1; }
+          done
+          # Level error saja: SC2034 (variabel boilerplate tak terpakai) dan
+          # SC1091 (source file lain) memang wajar di modul ini.
+          shellcheck -s bash -S error module/*.sh
+
+      - name: Versi module.prop harus sama dengan update.json
+        run: |
+          set -eu
+          PROP_VER=$(grep -m1 '^version=' module/module.prop | cut -d= -f2)
+          PROP_CODE=$(grep -m1 '^versionCode=' module/module.prop | cut -d= -f2)
+          JSON_VER=$(jq -r '.version' update.json)
+          JSON_CODE=$(jq -r '.versionCode' update.json)
+          echo "module.prop : ${PROP_VER} (${PROP_CODE})"
+          echo "update.json : ${JSON_VER} (${JSON_CODE})"
+          [ "$PROP_VER" = "$JSON_VER" ] || { echo "ERROR: version tidak sinkron"; exit 1; }
+          [ "$PROP_CODE" = "$JSON_CODE" ] || { echo "ERROR: versionCode tidak sinkron"; exit 1; }
+
+      - name: URL update harus menunjuk fork ini, bukan upstream
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          grep -q "updateJson=https://raw.githubusercontent.com/${REPO}/" module/module.prop || {
+            echo "ERROR: updateJson di module.prop tidak menunjuk ${REPO} -"
+            echo "manager akan menawarkan rilis upstream dan menimpa fork ini."
+            grep '^updateJson=' module/module.prop
+            exit 1
+          }
+          jq -er --arg repo "$REPO" '.zipUrl | startswith("https://github.com/" + $repo + "/")' update.json > /dev/null || {
+            echo "ERROR: zipUrl di update.json tidak menunjuk ${REPO}"
+            jq -r '.zipUrl' update.json
+            exit 1
+          }
+
+      - name: Toggle config_* harus konsisten
+        run: |
+          set -eu
+          grep -oE '^config_[a-z0-9_]+' module/config.sh | sort -u > /tmp/defined.txt
+          grep -rhoE 'config_[a-z0-9_]+' module/*.sh module/webroot/script.js module/webroot/index.html | sort -u > /tmp/used.txt
+          if ! comm -13 /tmp/defined.txt /tmp/used.txt | grep -q .; then
+            echo "OK: semua toggle yang dipakai ada di config.sh"
+          else
+            echo "ERROR: dipakai tapi tidak didefinisikan di config.sh:"
+            comm -13 /tmp/defined.txt /tmp/used.txt
+            exit 1
+          fi
+          ORPHAN=$(comm -23 /tmp/defined.txt /tmp/used.txt || true)
+          [ -z "$ORPHAN" ] || { echo "ERROR: toggle yatim (ada di config.sh, tidak dipakai siapa pun):"; echo "$ORPHAN"; exit 1; }
+
+      - name: Binari susfs harus ELF arm64
+        run: |
+          set -eu
+          file module/tools/susfs
+          file module/tools/susfs | grep -q 'ELF 64-bit LSB .*ARM aarch64' || {
+            echo "ERROR: module/tools/susfs bukan ELF arm64"; exit 1;
+          }
+
+  rilis:
+    name: Bangun zip dan terbitkan rilis
+    needs: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bangun BRENE.zip dari isi module/
+        id: bangun
+        run: |
+          set -eu
+          VERSION=$(grep -m1 '^version=' module/module.prop | cut -d= -f2)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${VERSION}-dlagia.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          # module.prop WAJIB berada di akar zip, bukan di dalam folder module/.
+          (cd module && zip -r9 ../BRENE.zip . -x '.*')
+          cp BRENE.zip "BRENE-${VERSION}.zip"
+          unzip -l BRENE.zip
+          unzip -p BRENE.zip module.prop > /dev/null || { echo "ERROR: module.prop tidak di akar zip"; exit 1; }
+
+      - name: Terbitkan rilis
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.bangun.outputs.tag }}
+          VERSION: ${{ steps.bangun.outputs.version }}
+        run: |
+          set -eu
+          gh release create "$TAG" \
+            --title "BRENE ${VERSION} (fork dlagia, build ${GITHUB_RUN_NUMBER})" \
+            --notes "Dibangun otomatis dari ${GITHUB_SHA} di cabang \`main\`.
+
+          Zip ini dipakai oleh \`update.json\` lewat tautan \`releases/latest/download/BRENE.zip\`,
+          jadi tombol update di manager KernelSU mengambil dari fork ini, bukan dari upstream.
+
+          Kernel yang diaudit untuk fork ini: rosemary 4.14 (dlagia/test), ReSukiSU version code 35158,
+          SuSFS v2.3.0 NON-GKI, 9 fitur SuSFS aktif. Rinciannya di \`docs/AUDIT-KERNEL-DLAGIA.md\`." \
+            --latest \
+            "BRENE.zip" "BRENE-${VERSION}.zip"
