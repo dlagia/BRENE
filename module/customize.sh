@@ -124,7 +124,7 @@ fi
 #    hanya diam-diam tidak berefek, jadi lebih baik dilaporkan saat install.
 enabled_features=$(${SUSFS_BIN} show enabled_features 2> /dev/null)
 missing_features=0
-config_needs="
+cfg_needs="
 config_paths_hiding__non_standard_sdcard=CONFIG_KSU_SUSFS_SUS_PATH
 config_paths_hiding__non_standard_sdcard_android=CONFIG_KSU_SUSFS_SUS_PATH
 config_paths_hiding__data_local_tmp=CONFIG_KSU_SUSFS_SUS_PATH
@@ -144,14 +144,14 @@ config_spoof_libstagefright=CONFIG_KSU_SUSFS_OPEN_REDIRECT
 config_hide_lineage_strings=CONFIG_KSU_SUSFS_OPEN_REDIRECT
 config_enable_log=CONFIG_KSU_SUSFS_ENABLE_LOG
 "
-for pair in ${config_needs}; do
-	config_key=${pair%%=*}
+for pair in ${cfg_needs}; do
+	cfg_key=${pair%%=*}
 	needed_feature=${pair#*=}
 
-	[[ "$(grep -m1 "^${config_key}=" "${PERSISTENT_DIR}/config.sh" | cut -d'=' -f2)" == "1" ]] || continue
+	[[ "$(grep -m1 "^${cfg_key}=" "${PERSISTENT_DIR}/config.sh" | cut -d'=' -f2)" == "1" ]] || continue
 
 	if ! echo "${enabled_features}" | grep -q "^${needed_feature}$"; then
-		echo "[⚠️] ${config_key}=1 butuh ${needed_feature}, kernel ini tidak punya - toggle itu tidak akan berefek"
+		echo "[⚠️] ${cfg_key}=1 butuh ${needed_feature}, kernel ini tidak punya - toggle itu tidak akan berefek"
 		missing_features=$((missing_features + 1))
 	fi
 done
