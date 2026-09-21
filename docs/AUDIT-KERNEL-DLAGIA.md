@@ -112,12 +112,27 @@ walaupun shebang-nya `#!/bin/bash`. Konsekuensinya semua applet busybox (`shuf`,
 - Sisi kernel: `CONFIG_KSU_SUSFS_TRY_UMOUNT=y` di defconfig `dlagia/Build-Kernel_scripts`
   adalah **simbol yatim** - tidak ada di Kconfig ReSukiSU maupun di patch SuSFS 2.3.0
   (`CMD_SUSFS_ADD_TRY_UMOUNT` ditandai *deprecated*), jadi tidak pernah resolve di
-  `out/.config`. Tidak berbahaya, dan sudah dicatat di komentar workflow kernel.
-  Umount sekarang ditangani `ksud feature set kernel_umount` + NoMount.
+  `out/.config`. Umount sekarang ditangani `ksud feature set kernel_umount` + NoMount.
+
+  **Keputusan: DIBIARKAN, jangan dihapus.** Ini bukan pekerjaan yang tertunda.
+  Alasannya sudah tertulis di `dlagia/test` → `.github/workflows/build-kernel-ksu-v2.yml`
+  (bagian komentar sebelum langkah "Mengunduh dan menggabungkan ksu-susfs_defconfig"):
+  Kconfig membuang baris itu diam-diam dan `try_umount` di ReSukiSU tidak lagi
+  digerbangi Kconfig, jadi menghapusnya tidak mengubah satu bit pun di `.config`
+  maupun di kernel hasil build. Sebaliknya biayanya nyata: defconfig-nya tinggal di
+  repo lain di balik `SCRIPTS_PIN`, sehingga menghapus satu baris mati menuntut
+  naikkan pin → build ulang → flash ulang, alias menggeser konfigurasi yang berstatus
+  "TITIK TERBUKTI BOOT" (revisi ke-42, commit `5e8e140c`) demi perubahan tanpa efek.
+  Audit berikutnya cukup mencatat baris ini sebagai yatim yang diketahui, tanpa
+  mengusulkan penghapusan lagi. Yang layak mengubah keputusan ini hanya satu hal:
+  kalau ReSukiSU kelak menambahkan kembali simbol `KSU_SUSFS_TRY_UMOUNT`, baris ini
+  akan mulai resolve dan perlu diaudit sebagai fitur yang aktif, bukan sebagai yatim.
 
 ## 7. Cara pakai
 
-1. Merge PR ini ke `main`.
+1. ~~Merge PR ini ke `main`.~~ Sudah dilakukan 2026-09-21 (merge commit `214605e`).
 2. Workflow **Rilis BRENE** jalan otomatis dan membuat rilis `v0.0.67-dlagia.<nomor build>`
-   berisi `BRENE.zip`.
+   berisi `BRENE.zip`. Rilis pertama: `v0.0.67-dlagia.2` (build 1 gagal di job audit karena
+   variabel loop `config_needs`/`config_key` ikut tertangkap pola cek ORPHAN; sudah diganti
+   jadi `cfg_needs`/`cfg_key` di commit `3e77d0e`).
 3. Flash `BRENE.zip` lewat manager KernelSU. Update berikutnya akan diambil dari fork ini.
