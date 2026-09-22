@@ -75,7 +75,8 @@ const configs = [
 	{ id: 'spoof_fingerprint_properties' },
 	{ id: 'spoof_utc_properties' },
 	{ id: 'spoof_date_properties' },
-	{ id: 'spoof_os_patch_level_property' },
+	{ id: 'spoof_os_security_patch_level_property' },
+	{ id: 'spoof_vendor_security_patch_level_property' },
 
 	{ id: 'paths_hiding__non_standard_sdcard' },
 	{ id: 'paths_hiding__non_standard_sdcard_android' },
@@ -199,6 +200,26 @@ exec('ksud module list').then((result) => {
 	})
 })
 
+// Incompatible Modules
+exec('ksud module list').then((result) => {
+	if (result.errno !== 0) return
+
+	const container = document.querySelector('#incompatible-modules')
+	const modules = JSON.parse(result.stdout)
+	const moduleIds = modules.map((mod) => mod.id)
+	const cardRows = container.querySelectorAll('.card-row')
+
+	cardRows.forEach((row) => {
+		const moduleKey = row.getAttribute('data-module')
+		const statusSpan = row.querySelector('.status-text')
+
+		if (moduleIds.includes(moduleKey)) {
+			statusSpan.innerText = 'Status: Installed'
+			statusSpan.style.color = '#ff0000be'
+		}
+	})
+})
+
 // Load enabled features
 exec('susfs show enabled_features').then((result) => {
 	const container = document.getElementById('kernel-features-container')
@@ -208,6 +229,17 @@ exec('susfs show enabled_features').then((result) => {
 		return
 	}
 	container.innerText = result.stdout.replaceAll('CONFIG_KSU_SUSFS_', '')
+})
+
+// Load Suspicious Mounts
+exec(`cat /proc/1/mountinfo | grep -E "^2[0-9]{9,} .*$|KSU" | awk '{print $5}'`).then((result) => {
+	const container = document.getElementById('suspicious_mounts')
+
+	if (result.errno !== 0) {
+		container.innerText = 'Failed to load'
+		return
+	}
+	container.innerText = result.stdout
 })
 
 // Load logs
