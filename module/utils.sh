@@ -86,7 +86,12 @@ spoof_system_properties() {
 	if_prop_exits_resetprop_n "ro.boot.realme.lockstate" "1"
 	if_prop_exits_resetprop_n "ro.boot.realmebootstate" "green"
 
-	resetprop_n "ro.boot.vbmeta.size" "$(blockdev --getsize64 "/dev/block/by-name/vbmeta$(resetprop ro.boot.slot_suffix)")"
+	# Fork dlagia: kalau partisi vbmeta tidak ada atau blockdev gagal, jangan
+	# tulis prop-nya jadi string kosong - ro.boot.vbmeta.size kosong justru
+	# sinyal aneh yang tidak pernah muncul di ROM stok. Perangkat non-A/B
+	# (mis. rosemary) punya slot_suffix kosong, jadi path-nya /...by-name/vbmeta.
+	vbmeta_size=$(blockdev --getsize64 "/dev/block/by-name/vbmeta$(resetprop ro.boot.slot_suffix)" 2> /dev/null)
+	[[ -z "${vbmeta_size}" ]] || resetprop_n "ro.boot.vbmeta.size" "${vbmeta_size}"
 	resetprop_n "ro.boot.vbmeta.avb_version" "1.3"
 	resetprop_n "ro.boot.vbmeta.hash_alg" "sha256"
 	resetprop_n "ro.boot.vbmeta.device_state" "locked"
