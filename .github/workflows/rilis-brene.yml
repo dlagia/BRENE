@@ -31,7 +31,7 @@ jobs:
     name: Audit modul
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Sintaks + shellcheck semua script modul
         run: |
@@ -76,7 +76,18 @@ jobs:
         run: |
           set -eu
           grep -oE '^config_[a-z0-9_]+' module/config.sh | sort -u > /tmp/defined.txt
-          grep -rhoE 'config_[a-z0-9_]+' module/*.sh module/webroot/script.js module/webroot/index.html | sort -u > /tmp/used.txt
+          # Dua hal penting soal daftar "pemakai" di bawah:
+          # - module/config.sh SENGAJA tidak ikut dipindai: kalau ikut, setiap toggle
+          #   jadi "dipakai" oleh definisinya sendiri dan cek ORPHAN tidak akan pernah
+          #   menyala (bug gerbang audit, ditemukan 2026-09-22).
+          # - komentar dibuang dulu, karena komentar yang MEMBAHAS nama toggle (mis.
+          #   mencatat toggle yang diganti nama upstream) bukan pemakaian.
+          for f in module/action.sh module/boot-completed.sh module/customize.sh                    module/inotify.sh module/post-fs-data.sh module/uninstall.sh module/utils.sh; do
+            sed 's/[[:space:]]*#.*$//' "$f"
+          done > /tmp/pemakai.txt
+          sed 's|[[:space:]]*//.*$||' module/webroot/script.js >> /tmp/pemakai.txt
+          cat module/webroot/index.html >> /tmp/pemakai.txt
+          grep -ohE 'config_[a-z0-9_]+' /tmp/pemakai.txt | sort -u > /tmp/used.txt
           if ! comm -13 /tmp/defined.txt /tmp/used.txt | grep -q .; then
             echo "OK: semua toggle yang dipakai ada di config.sh"
           else
@@ -85,7 +96,44 @@ jobs:
             exit 1
           fi
           ORPHAN=$(comm -23 /tmp/defined.txt /tmp/used.txt || true)
+          [ -n "$ORPHAN" ] || echo "OK: tidak ada toggle yatim di config.sh"
           [ -z "$ORPHAN" ] || { echo "ERROR: toggle yatim (ada di config.sh, tidak dipakai siapa pun):"; echo "$ORPHAN"; exit 1; }
+
+      - name: Setiap toggle harus punya switch di WebUI
+        run: |
+          set -eu
+          # Tiga kunci ini bukan switch, melainkan text field dengan id sendiri
+          # (vbh_text_field, custom_uname_release, custom_uname_version).
+          BUKAN_SWITCH="config_spoof_verified_boot_hash config_custom_uname_kernel_release config_custom_uname_kernel_version"
+          # while-read jalan di subshell, jadi status kegagalan dititipkan lewat file.
+          rm -f /tmp/webui-gagal
+          grep -oE '^config_[a-z0-9_]+' module/config.sh | while read -r key; do
+            case " ${BUKAN_SWITCH} " in *" ${key} "*) continue ;; esac
+            id=${key#config_}
+            grep -q "id=\"${id}\"" module/webroot/index.html || {
+              echo "ERROR: ${key} tidak punya elemen id=\"${id}\" di index.html"
+              touch /tmp/webui-gagal
+            }
+            grep -q "id: '${id}'" module/webroot/script.js || {
+              echo "ERROR: ${key} tidak ada di daftar configs di script.js"
+              touch /tmp/webui-gagal
+            }
+          done
+          [ ! -e /tmp/webui-gagal ] || exit 1
+          echo "OK: semua toggle bisa diubah dari WebUI"
+
+      - name: Sintaks JavaScript WebUI
+        run: |
+          set -eu
+          # WebUI tidak pernah dijalankan di CI, jadi script.js yang rusak baru
+          # ketahuan di perangkat. node --check menangkapnya di sini; ekstensi
+          # .mjs dipakai supaya import/export ESM dikenali.
+          for f in module/webroot/script.js module/webroot/assets/*.js; do
+            base=$(basename "$f" .js)
+            cp "$f" "/tmp/${base}.mjs"
+            node --check "/tmp/${base}.mjs" || { echo "ERROR: sintaks $f rusak"; exit 1; }
+          done
+          echo "OK: script WebUI lolos node --check"
 
       - name: Binari susfs harus ELF arm64
         run: |
@@ -100,7 +148,7 @@ jobs:
     needs: audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Bangun BRENE.zip dari isi module/
         id: bangun
@@ -122,6 +170,13 @@ jobs:
           VERSION: ${{ steps.bangun.outputs.version }}
         run: |
           set -eu
+          # Re-run job pakai GITHUB_RUN_NUMBER yang sama, jadi tag bisa sudah ada.
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Rilis $TAG sudah ada, aset ditimpa."
+            gh release upload "$TAG" --clobber "BRENE.zip" "BRENE-${VERSION}.zip"
+            exit 0
+          fi
+
           gh release create "$TAG" \
             --title "BRENE ${VERSION} (fork dlagia, build ${GITHUB_RUN_NUMBER})" \
             --notes "Dibangun otomatis dari ${GITHUB_SHA} di cabang \`main\`.

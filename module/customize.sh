@@ -97,6 +97,19 @@ else
 		fi
 
 	done < "${MODPATH}/config.sh"
+
+	# Tambahan fork dlagia: buang kunci yang sudah tidak dikenal modul.
+	# Loop di atas hanya MENAMBAH kunci baru, tidak pernah membuang yang lama,
+	# jadi rename di upstream (v0.0.68: config_spoof_os_patch_level_property ->
+	# config_spoof_os_security_patch_level_property) meninggalkan kunci mati di
+	# /data/adb/brene/config.sh selamanya - toggle-nya tidak dibaca script mana
+	# pun, tapi tetap terlihat di WebUI-nya sendiri dan membingungkan saat audit.
+	grep -oE '^config_[a-z0-9_]+' "${PERSISTENT_DIR}/config.sh" | while read -r key; do
+		grep -q "^${key}=" "${MODPATH}/config.sh" && continue
+
+		sed -i "/^${key}=/d" "${PERSISTENT_DIR}/config.sh"
+		echo "[➖] Removed obsolete key: ${key}"
+	done
 fi
 
 # Remove fake_files folder

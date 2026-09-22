@@ -1,0 +1,4 @@
+# Berkas milik upstream yang sengaja dibiarkan apa adanya supaya diff terhadap
+# rrr333nnn333/BRENE tetap nol dan merge upstream tidak bentrok karena format.
+module/webroot/assets/
+module/webroot/theme.css

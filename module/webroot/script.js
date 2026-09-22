@@ -75,7 +75,8 @@ const configs = [
 	{ id: 'spoof_fingerprint_properties' },
 	{ id: 'spoof_utc_properties' },
 	{ id: 'spoof_date_properties' },
-	{ id: 'spoof_os_patch_level_property' },
+	{ id: 'spoof_os_security_patch_level_property' },
+	{ id: 'spoof_vendor_security_patch_level_property' },
 
 	{ id: 'paths_hiding__non_standard_sdcard' },
 	{ id: 'paths_hiding__non_standard_sdcard_android' },
@@ -199,6 +200,26 @@ exec('ksud module list').then((result) => {
 	})
 })
 
+// Incompatible Modules
+exec('ksud module list').then((result) => {
+	if (result.errno !== 0) return
+
+	const container = document.querySelector('#incompatible-modules')
+	const modules = JSON.parse(result.stdout)
+	const moduleIds = modules.map((mod) => mod.id)
+	const cardRows = container.querySelectorAll('.card-row')
+
+	cardRows.forEach((row) => {
+		const moduleKey = row.getAttribute('data-module')
+		const statusSpan = row.querySelector('.status-text')
+
+		if (moduleIds.includes(moduleKey)) {
+			statusSpan.innerText = 'Status: Installed'
+			statusSpan.style.color = '#ff0000be'
+		}
+	})
+})
+
 // Load enabled features
 exec('susfs show enabled_features').then((result) => {
 	const container = document.getElementById('kernel-features-container')
@@ -208,6 +229,18 @@ exec('susfs show enabled_features').then((result) => {
 		return
 	}
 	container.innerText = result.stdout.replaceAll('CONFIG_KSU_SUSFS_', '')
+})
+
+// Load Suspicious Mounts
+exec(`cat /proc/1/mountinfo | grep -E "^2[0-9]{9,} .*$|KSU" | awk '{print $5}'`).then((result) => {
+	const container = document.getElementById('suspicious_mounts')
+
+	if (result.errno !== 0) {
+		container.innerText = 'Failed to load'
+		return
+	}
+	// Fork dlagia: tidak ada sus mount adalah hasil yang benar, bukan blok kosong.
+	container.innerText = result.stdout.trim() === '' ? 'None' : result.stdout
 })
 
 // Load logs
@@ -264,15 +297,10 @@ function setFeature(cmd) {
 	})
 }
 
-// Load config and add toggle event
-exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
-	if (result.errno !== 0) {
-		toast('Failed to load config')
-		return
-	}
-
-	const configValues = Object.fromEntries(
-		result.stdout
+// Helper function to parse config.sh into { config_key: value } pairs
+function parseConfig(stdout) {
+	return Object.fromEntries(
+		stdout
 			.split('\n')
 			.filter((line) => line.includes('='))
 			.map((line) => {
@@ -286,24 +314,41 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 				]
 			}),
 	)
+}
 
-	// custom uname
+// Helper function to apply config values to the WebUI controls
+function applyConfigToUi(configValues) {
+	configs.forEach((config) => {
+		const element = document.getElementById(config.id)
+		if (!element) return
+
+		const value = configValues[`config_${config.id}`]
+		if (value !== undefined) {
+			element.selected = parseInt(value) === 1
+		}
+	})
+
 	document.getElementById('custom_uname_release').value = configValues['config_custom_uname_kernel_release']
 	document.getElementById('custom_uname_version').value = configValues['config_custom_uname_kernel_version']
-
-	// Verified Boot Hash
 	document.getElementById('vbh_text_field').value = configValues['config_spoof_verified_boot_hash']
+}
+
+// Load config and add toggle event
+exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
+	if (result.errno !== 0) {
+		toast('Failed to load config')
+		return
+	}
+
+	const configValues = parseConfig(result.stdout)
+
+	applyConfigToUi(configValues)
 
 	// toggle
 	configs.forEach((config) => {
 		const configId = `config_${config.id}`
 		const element = document.getElementById(config.id)
 		if (!element) return
-
-		const value = configValues[configId]
-		if (value !== undefined) {
-			element.selected = parseInt(value) === 1
-		}
 
 		element.addEventListener('change', async () => {
 			const enabled = element.selected
@@ -321,21 +366,17 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 	})
 	dialog.addEventListener('close', () => {
 		if (dialog.returnValue === 'confirm') {
-			exec(`
-				cp -f ${MODDIR}/config.sh ${PERSISTENT_DIR}
-			`).then((result) => {
-				configs.forEach((config) => {
-					const configId = `config_${config.id}`
-					const element = document.getElementById(config.id)
-					if (!element) return
+			// Fork dlagia: baca ulang config.sh SESUDAH disalin. Versi lama memakai
+			// configValues yang direkam sebelum reset, jadi semua switch tetap
+			// menampilkan nilai lama padahal config.sh sudah kembali ke default.
+			exec(`cp -f ${MODDIR}/config.sh ${PERSISTENT_DIR} && cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
+				if (result.errno !== 0) {
+					toast(result.stderr)
+					return
+				}
 
-					const value = configValues[configId]
-					if (value !== undefined) {
-						element.selected = parseInt(value) === 1
-					}
-				})
-
-				toast(result.errno === 0 ? 'Success' : result.stderr)
+				applyConfigToUi(parseConfig(result.stdout))
+				toast('Success')
 			})
 		}
 	})
