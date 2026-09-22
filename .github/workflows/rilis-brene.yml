@@ -29,7 +29,8 @@ permissions:
 jobs:
   audit:
     name: Audit modul
-    runs-on: ubuntu-latest
+    # Dipin: label ubuntu-latest pindah ke Ubuntu 26 mulai 19 Oktober 2026
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -146,7 +147,8 @@ jobs:
   rilis:
     name: Bangun zip dan terbitkan rilis
     needs: audit
-    runs-on: ubuntu-latest
+    # Dipin: label ubuntu-latest pindah ke Ubuntu 26 mulai 19 Oktober 2026
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
