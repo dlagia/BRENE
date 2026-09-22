@@ -242,3 +242,71 @@ memanggil `spoof_system_properties`, yang menyetel `ro.adb.secure=1`, `ro.secure
 `service.adb.root`/`service.adb.tcp.port`. Efeknya ADB bisa ikut mati. Kalau ADB
 diperlukan: nyalakan `config_usb_debugging` dari WebUI, atau matikan sementara
 `Spoof System Properties` lalu reboot. Tidak diubah di fork - itu inti gunanya modul ini.
+
+## 9. Audit ronde ketiga (2026-09-23)
+
+### 9.1 Upstream dan ORPHAN
+
+- Upstream `rrr333nnn333/BRENE` tidak bergerak sejak `4156b89` (`bump: version to v0.0.68`).
+  Fork ini 12 commit di depan, 0 di belakang - tidak ada yang perlu digabung.
+- 42 toggle di `config.sh`: nol yatim, nol yang dipakai tanpa definisi.
+- Pemeriksaan baru yang tidak ada di gerbang CI: setiap toggle harus dibaca
+  oleh script shell, bukan sekadar muncul di WebUI. Hasilnya nol toggle yang
+  hanya hiasan WebUI. Arah sebaliknya juga bersih - `id` di `script.js` dan
+  `<md-switch>` di `index.html` semuanya punya pasangan di `config.sh`, kecuali
+  tiga text field yang memang bukan switch.
+
+### 9.2 Dependency
+
+Ketiganya sudah di versi terbaru, tidak ada yang dinaikkan:
+
+| Dependency         | Terpasang           | Terbaru |
+| ------------------ | ------------------- | ------- |
+| prettier           | 3.9.8               | 3.9.8   |
+| prettier-plugin-sh | 0.19.0              | 0.19.0  |
+| actions/checkout   | `3d3c42e5` (v7.0.1) | v7.0.1  |
+
+### 9.3 Bug tersembunyi yang diperbaiki
+
+1. **Nilai text field merusak `config.sh` diam-diam.** `updateConfig2()` di
+   `script.js` menyisipkan isi field langsung ke `sed -i "s/^key=.*/key='nilai'/"`.
+   Nilai itu melewati dua penafsir: shell dulu, lalu sed. Tanpa escape, `/`
+   memutus perintah sed, `&` menyisipkan seluruh teks yang cocok, dan `"`, `$`
+   atau backtick dimakan shell lebih dulu. Dipakai oleh Custom Spoof Uname dan
+   Verified Boot Hash, jadi satu karakter `/` di kolom uname sudah cukup.
+   Diperbaiki dengan `escapeSedReplacement()` + `escapeShellDq()` (urutannya
+   penting: sed dulu, shell sesudahnya) dan `sanitizeConfigValue()` yang
+   membuang kutip tunggal - satu-satunya karakter yang tidak bisa diselamatkan,
+   karena `config.sh` disumber oleh bash sebagai `key='nilai'`.
+   Nilai yang sama juga ikut ke `susfs set_uname "..."`, jadi jalur itu
+   diescape juga.
+2. **Tombol Verified Boot Hash melapor sukses untuk pekerjaan yang tidak ada.**
+   Dengan field kosong perintahnya menyusut jadi `resetprop -n ro.boot.vbmeta.digest`
+   tanpa argumen nilai. Itu hanya MEMBACA prop, keluar dengan status 0, dan
+   WebUI menampilkan "No need to reboot". Sekarang field kosong dihentikan lebih
+   awal dengan pesan yang jujur, dan nilainya dikutip saat dipakai.
+3. **Glob yang tidak cocok dikirim sebagai path.** Tiga loop di
+   `boot-completed.sh` (`/storage/emulated/0/*`, `/storage/emulated/0/Android/*`,
+   `/data/local/tmp/*`) mengandalkan glob. Kalau direktorinya kosong, bash
+   mengembalikan polanya apa adanya, dan `/data/local/tmp/*` - berikut
+   asteriksnya - ikut dikirim ke `add_sus_path_loop`. Ditambahkan
+   `[[ -e "${i}" ]] || continue`.
+
+### 9.4 Diperiksa, bersih
+
+- `actionlint` pada `rilis-brene.yml`: nol temuan.
+- `shellcheck -S error` pada tujuh script modul: nol temuan (SC2034 boilerplate
+  tetap di luar gerbang, seperti sebelumnya).
+- `prettier --check .`: semua berkas sesuai format.
+- `node --check` pada `script.js` dan kedua berkas `assets/*.js`: lolos.
+- `module/tools/susfs` masih ELF 64-bit arm64 PIE (NDK r30-beta2), identik
+  dengan upstream.
+- `module.prop` dan `update.json` sinkron di `v0.0.68` / `68`, `updateJson` dan
+  `zipUrl` menunjuk `dlagia/BRENE`.
+
+### 9.5 Issues
+
+Lima issue terbuka di upstream, sama persis dengan daftar ronde kedua (#58, #57,
+#43, #25, #20). Tidak ada yang baru sejak 2026-09-22, tidak ada yang berubah
+status, dan triasenya tidak berubah - lihat bagian 8.5. Issues di
+`dlagia/BRENE` tetap dimatikan.

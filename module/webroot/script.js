@@ -282,10 +282,30 @@ function updateConfig(config, value) {
 	})
 }
 
+// Fork dlagia: nilai dari text field (uname, verified boot hash) masuk ke dua
+// tingkat penafsiran sekaligus - shell lalu sed. Tanpa escape, '/' memutus
+// perintah sed, '&' menyisipkan seluruh teks yang cocok, dan '"' atau '$'
+// dimakan shell lebih dulu. Akibatnya config.sh rusak diam-diam, bukan sekadar
+// gagal. Urutannya penting: escape sed dulu, escape shell sesudahnya, karena
+// shell yang membongkar lapisannya lebih dulu saat perintah dijalankan.
+function escapeSedReplacement(value) {
+	return String(value).replace(/[\\&/]/g, '\\$&')
+}
+function escapeShellDq(value) {
+	return String(value).replace(/[\\"$`]/g, '\\$&')
+}
+// Satu-satunya karakter yang tidak bisa diselamatkan: kutip tunggal, karena
+// nilainya ditulis ke config.sh sebagai key='nilai' dan config.sh disumber oleh
+// bash. Dibuang, bukan dibiarkan merusak berkasnya.
+function sanitizeConfigValue(value) {
+	return String(value).replace(/'/g, '')
+}
+
 // TEMP
 // Helper function to update config
 function updateConfig2(config, value) {
-	exec(`sed -i "s/^${config}=.*/${config}='${value}'/" ${PERSISTENT_DIR}/config.sh`).then((result) => {
+	const safe = escapeShellDq(escapeSedReplacement(sanitizeConfigValue(value)))
+	exec(`sed -i "s/^${config}=.*/${config}='${safe}'/" ${PERSISTENT_DIR}/config.sh`).then((result) => {
 		if (result.errno !== 0) toast('Failed to update config')
 	})
 }
@@ -409,7 +429,9 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 	const updateUname = (release, version) => {
 		updateConfig2('config_custom_uname_kernel_release', release)
 		updateConfig2('config_custom_uname_kernel_version', version)
-		setFeature(`susfs set_uname "${release}" "${version}"`)
+		// Nilai yang sama juga masuk ke perintah shell di sini, jadi ia perlu
+		// escape yang sama - tanda kutip di dalamnya memutus argumennya.
+		setFeature(`susfs set_uname "${escapeShellDq(sanitizeConfigValue(release))}" "${escapeShellDq(sanitizeConfigValue(version))}"`)
 	}
 
 	// Apply
@@ -435,7 +457,16 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 	button.addEventListener('click', () => {
 		updateConfig2('config_spoof_verified_boot_hash', textField.value)
 
-		exec(`resetprop -n ro.boot.vbmeta.digest ${textField.value}`).then((result) => {
+		// Fork dlagia: field kosong berarti "jangan spoof". Tanpa penjaga ini
+		// perintahnya menyusut jadi 'resetprop -n ro.boot.vbmeta.digest', yang
+		// hanya MEMBACA prop, keluar dengan status 0, dan menampilkan toast
+		// sukses untuk pekerjaan yang tidak pernah dilakukan.
+		if (textField.value.trim() === '') {
+			toast('Verified boot hash cleared, no prop was set')
+			return
+		}
+
+		exec(`resetprop -n ro.boot.vbmeta.digest "${escapeShellDq(textField.value.trim())}"`).then((result) => {
 			if (result.errno === 0) {
 				toast('No need to reboot')
 			} else {
