@@ -24,3 +24,6 @@
 - fix: `ro.boot.vbmeta.size` tidak lagi ditulis kosong kalau partisi vbmeta tidak ada
 - improve: WebUI "Suspicious Mounts" menampilkan `None` alih-alih blok kosong
 - improve: rilis tahan re-run, dependency dipin (`actions/checkout` SHA v7.0.1, prettier 3.9.8)
+- fix: nilai Custom Spoof Uname / Verified Boot Hash tidak lagi merusak `config.sh` (escape shell + sed)
+- fix: tombol Verified Boot Hash tidak lagi melapor sukses saat kolomnya kosong
+- fix: glob kosong tidak lagi dikirim ke susfs sebagai path (`/data/local/tmp/*` dan dua saudaranya)

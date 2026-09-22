@@ -202,6 +202,9 @@ if [[ "${config_paths_hiding__non_standard_sdcard}" == "1" ]]; then
 	fi
 
 	for i in /storage/emulated/0/*; do
+		# Fork dlagia: direktori kosong membuat bash mengembalikan pola '*' apa
+		# adanya, dan pola itu ikut dikirim ke susfs sebagai path yang tidak ada.
+		[[ -e "${i}" ]] || continue
 		pass=0
 		for x in ${standard_paths}; do
 			if [[ "/storage/emulated/0/${x}" == "${i}" ]]; then
@@ -229,6 +232,7 @@ if [[ "${config_paths_hiding__non_standard_sdcard_android}" == "1" ]]; then
 
 	standard_paths="data media obb"
 	for i in /storage/emulated/0/Android/*; do
+		[[ -e "${i}" ]] || continue
 		pass=0
 		for x in ${standard_paths}; do
 			if [[ "/storage/emulated/0/Android/${x}" == "${i}" ]]; then
@@ -255,6 +259,7 @@ if [[ "${config_paths_hiding__data_local_tmp}" == "1" ]]; then
 	fi
 
 	for i in /data/local/tmp/*; do
+		[[ -e "${i}" ]] || continue
 		brene_sus_path_loop "${i}"
 	done
 fi
