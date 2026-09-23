@@ -94,6 +94,11 @@ fi
 # Remove Custom ROM Properties
 if [[ "${config_rom_props}" == "1" ]]; then
 	resetprop | grep -iE "${CUSTOM_ROM_NAMES}" | awk -F'[][]' '{print $2}' | while read -r prop; do
+		# Fork dlagia: grep di atas juga mencocokkan NILAI prop, jadi fingerprint
+		# ROM kustom ("Xiaomi/axion_rosemary/...") ikut terhapus dan
+		# getprop ro.build.fingerprint jadi kosong - jauh lebih mencurigakan
+		# daripada nama ROM-nya. Fingerprint diurus spoof_fingerprint_properties.
+		[[ "${prop}" == *build.fingerprint ]] && continue
 		resetprop -d "${prop}"
 	done
 
