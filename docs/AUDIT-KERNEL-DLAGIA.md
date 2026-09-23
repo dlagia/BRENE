@@ -310,3 +310,61 @@ Lima issue terbuka di upstream, sama persis dengan daftar ronde kedua (#58, #57,
 #43, #25, #20). Tidak ada yang baru sejak 2026-09-22, tidak ada yang berubah
 status, dan triasenya tidak berubah - lihat bagian 8.5. Issues di
 `dlagia/BRENE` tetap dimatikan.
+
+## 10. Audit ronde keempat (2026-09-23, sesudah PR #4)
+
+### 10.1 Upstream, ORPHAN, dependency
+
+- Upstream `rrr333nnn333/BRENE` masih di `4156b89` (v0.0.68). Divergensi kode di
+  luar perubahan fork yang disengaja: nol.
+- ORPHAN: 42 toggle di `config.sh`, 0 yatim, 0 dipakai-tanpa-definisi (gerbang
+  yang sama dengan `rilis-brene.yml`, dijalankan lokal).
+- Dependency sudah terbaru semua: `actions/checkout` v7.0.1 (`3d3c42e5`),
+  `prettier` 3.9.8, `prettier-plugin-sh` 0.19.0.
+- **`package-lock.json` dibuang dari repo dan masuk `.gitignore`.** Berkas itu
+  ikut ter-commit tanpa sengaja di ronde ketiga (`d3a2870`) dan bertentangan
+  dengan keputusan di 8.2: prettier hanya alat lokal, versinya dipin eksak di
+  `package.json`, CI tidak pernah menjalankannya. Pasang dengan
+  `npm i --no-save --no-package-lock`.
+
+### 10.2 Bug tersembunyi yang diperbaiki
+
+1. **`config_rom_props=1` menghapus `ro.build.fingerprint`.** `boot-completed.sh`
+   mem-grep keluaran `resetprop` utuh, jadi yang dicocokkan bukan hanya nama prop
+   tapi juga NILAINYA. Fingerprint ROM kustom (`Xiaomi/axion_rosemary/...`)
+   cocok, lalu `resetprop -d` menghapus semua `*.build.fingerprint`. Fingerprint
+   kosong jauh lebih mencolok daripada nama ROM di dalamnya. Nama ROM yang tidak
+   dibuang `spoof_fingerprint_properties` (semua selain evolution, crdroid,
+   lineage) selalu kena; kalau toggle fingerprint dimatikan, ketiganya ikut kena.
+   Sekarang prop `*build.fingerprint` dilewati dan diserahkan ke spoof
+   fingerprint.
+2. **Verified Boot Hash berisi spasi saja di-spoof jadi spasi di setiap boot.**
+   WebUI men-trim nilai untuk cek kosong, tapi menyimpan nilai mentah. `'   '`
+   lolos `!= ''` di `boot-completed.sh`, dan `ro.boot.vbmeta.digest` ditulis
+   jadi spasi, sementara WebUI melapor "cleared". Sekarang nilai di-trim sebelum
+   disimpan, dan nilai yang dipakai `resetprop` sama persis dengan yang disimpan.
+3. **`/sdcard` diganti di tengah path.** Tombol Apply sus path memakai
+   `replaceAll('/sdcard', ...)`, jadi `/data/sdcard_backup` berubah menjadi
+   `/data/storage/emulated/0_backup` dan path yang disembunyikan salah. Sekarang
+   hanya awalan baris `/sdcard` atau `/sdcard/...` yang diganti.
+4. **Indeks swipe `-1`.** `findIndex(...) || 0` tidak pernah jatuh ke 0 karena
+   `-1` truthy. Diganti `Math.max(0, ...)`.
+
+Kosmetik: daftar file pemakai di gerbang ORPHAN `rilis-brene.yml` punya
+deretan spasi di tengah baris (sisa kelanjutan baris yang hilang). Dikembalikan
+jadi `\` + baris baru; isi daftarnya tidak berubah.
+
+### 10.3 Diperiksa, bersih
+
+- `actionlint`, `bash -n`, `shellcheck -S error` pada tujuh script modul,
+  `node --check` pada `script.js`, `prettier --check .`: semua lolos.
+- Tautan di `index.html` dibuka lewat `am start -d` tanpa kutip; semua URL
+  statis tanpa `&`, `;`, atau spasi, jadi aman.
+- `until [[ -e /storage/emulated/0/Android ]]` bisa menunggu tanpa batas sebelum
+  unlock pertama; sudah dicatat di bagian 6 dan tidak memblok boot.
+
+### 10.4 Issues
+
+Lima issue terbuka di upstream tidak berubah sejak ronde ketiga (#58, #57, #43,
+#25, #20). Triasenya tetap seperti bagian 8.5. Issues di `dlagia/BRENE` tetap
+dimatikan.

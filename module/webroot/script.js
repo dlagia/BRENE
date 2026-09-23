@@ -455,18 +455,23 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 	const textField = document.getElementById('vbh_text_field')
 
 	button.addEventListener('click', () => {
-		updateConfig2('config_spoof_verified_boot_hash', textField.value)
+		// Fork dlagia: simpan versi yang sudah di-trim. Field berisi spasi saja
+		// dulu tersimpan sebagai '   ', lolos cek != '' di boot-completed.sh, dan
+		// ro.boot.vbmeta.digest di-spoof jadi spasi di setiap boot - padahal WebUI
+		// melapor "cleared".
+		const hash = textField.value.trim()
+		updateConfig2('config_spoof_verified_boot_hash', hash)
 
 		// Fork dlagia: field kosong berarti "jangan spoof". Tanpa penjaga ini
 		// perintahnya menyusut jadi 'resetprop -n ro.boot.vbmeta.digest', yang
 		// hanya MEMBACA prop, keluar dengan status 0, dan menampilkan toast
 		// sukses untuk pekerjaan yang tidak pernah dilakukan.
-		if (textField.value.trim() === '') {
+		if (hash === '') {
 			toast('Verified boot hash cleared, no prop was set')
 			return
 		}
 
-		exec(`resetprop -n ro.boot.vbmeta.digest "${escapeShellDq(textField.value.trim())}"`).then((result) => {
+		exec(`resetprop -n ro.boot.vbmeta.digest "${escapeShellDq(sanitizeConfigValue(hash))}"`).then((result) => {
 			if (result.errno === 0) {
 				toast('No need to reboot')
 			} else {
@@ -552,7 +557,10 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 					toast(result.errno === 0 ? 'Success' : result.stderr)
 				})
 			} else {
-				content = content.replaceAll('/sdcard', '/storage/emulated/0')
+				// Fork dlagia: hanya awalan path. replaceAll polos juga mengubah
+				// '/sdcard' di tengah path, mis. /data/sdcard_backup jadi
+				// /data/storage/emulated/0_backup, dan path itu yang disembunyikan.
+				content = content.replace(/^\/sdcard(?=\/|$)/gm, '/storage/emulated/0')
 
 				exec(`
 cat <<'UNIQUE_EOF' > ${PERSISTENT_DIR}/${file}
@@ -633,7 +641,12 @@ UNIQUE_EOF
 	const bodyContent = document
 	const buttons = Array.from(tabBar.querySelectorAll('button.tab-btn'))
 	const SWIPE_THRESHOLD = 10
-	let currentIndex = buttons.findIndex((btn) => btn.classList.contains('active')) || 0
+	// Fork dlagia: findIndex mengembalikan -1 (truthy), bukan 0, kalau tidak ada
+	// tab aktif, jadi '|| 0' tidak pernah jalan dan swipe pertama salah hitung.
+	let currentIndex = Math.max(
+		0,
+		buttons.findIndex((btn) => btn.classList.contains('active')),
+	)
 	let touchStartX = 0
 	let touchStartY = 0
 

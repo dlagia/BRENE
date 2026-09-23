@@ -83,7 +83,8 @@ jobs:
           #   menyala (bug gerbang audit, ditemukan 2026-09-22).
           # - komentar dibuang dulu, karena komentar yang MEMBAHAS nama toggle (mis.
           #   mencatat toggle yang diganti nama upstream) bukan pemakaian.
-          for f in module/action.sh module/boot-completed.sh module/customize.sh                    module/inotify.sh module/post-fs-data.sh module/uninstall.sh module/utils.sh; do
+          for f in module/action.sh module/boot-completed.sh module/customize.sh \
+                   module/inotify.sh module/post-fs-data.sh module/uninstall.sh module/utils.sh; do
             sed 's/[[:space:]]*#.*$//' "$f"
           done > /tmp/pemakai.txt
           sed 's|[[:space:]]*//.*$||' module/webroot/script.js >> /tmp/pemakai.txt

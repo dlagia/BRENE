@@ -27,3 +27,7 @@
 - fix: nilai Custom Spoof Uname / Verified Boot Hash tidak lagi merusak `config.sh` (escape shell + sed)
 - fix: tombol Verified Boot Hash tidak lagi melapor sukses saat kolomnya kosong
 - fix: glob kosong tidak lagi dikirim ke susfs sebagai path (`/data/local/tmp/*` dan dua saudaranya)
+- fix: `config_rom_props` tidak lagi menghapus `ro.build.fingerprint` (grep ikut mencocokkan nilai prop)
+- fix: Verified Boot Hash di-trim sebelum disimpan, spasi saja tidak lagi di-spoof ke `ro.boot.vbmeta.digest`
+- fix: Apply sus path hanya mengganti awalan `/sdcard`, bukan setiap kemunculan di tengah path
+- fix: indeks swipe tab tidak lagi mulai dari -1
