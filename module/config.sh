@@ -45,3 +45,5 @@ config_disable_child_process_restrictions=0
 config_spoof_verified_boot_hash=''
 config_custom_uname_kernel_release='default'
 config_custom_uname_kernel_version='default'
+CURRENT_YEAR=''
+CURRENT_MONTH=''

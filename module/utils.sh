@@ -161,15 +161,16 @@ spoof_date_properties() {
 }
 
 spoof_os_security_patch_level_property() {
-	YEAR=$(date +%Y)
-	MONTH=$(date +%m)
-	if_prop_exits_resetprop_n "ro.build.version.security_patch" "${YEAR}-${MONTH}-01"
+	if_prop_exits_resetprop_n "ro.build.version.security_patch" "${CURRENT_YEAR}-${CURRENT_MONTH}-01"
 }
 
 spoof_vendor_security_patch_level_property() {
-	YEAR=$(date +%Y)
-	MONTH=$(date +%m)
-	if_prop_exits_resetprop_n "ro.vendor.build.security_patch" "${YEAR}-${MONTH}-05"
+	if_prop_exits_resetprop_n "ro.vendor.build.security_patch" "${CURRENT_YEAR}-${CURRENT_MONTH}-05"
+}
+
+update_config_date() {
+	sed -i "s/^CURRENT_YEAR=.*/CURRENT_YEAR='$(date +%Y)'/" ${PERSISTENT_DIR}/config.sh
+	sed -i "s/^CURRENT_MONTH=.*/CURRENT_MONTH='$(date +%m)'/" ${PERSISTENT_DIR}/config.sh
 }
 
 brene_sus_path() {

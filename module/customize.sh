@@ -99,6 +99,8 @@ else
 	done < "${MODPATH}/config.sh"
 fi
 
+update_config_date
+
 # Remove fake_files folder
 [[ -d "${PERSISTENT_DIR}/fake_files" ]] && rm -rf "${PERSISTENT_DIR}/fake_files"
 

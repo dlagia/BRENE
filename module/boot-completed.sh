@@ -13,6 +13,8 @@ CUSTOM_ROM_NAMES="lineage|infinity|evolution|crdroid|mistos|axion|pixelos|rising
 # Load config
 [[ -e "${PERSISTENT_DIR}/config.sh" ]] && source "${PERSISTENT_DIR}/config.sh"
 
+update_config_date
+
 # Update Description
 susfs_version=$(${SUSFS_BIN} show version)
 susfs_variant=$(${SUSFS_BIN} show variant)
