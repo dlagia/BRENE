@@ -89,7 +89,9 @@ jobs:
           done > /tmp/pemakai.txt
           sed 's|[[:space:]]*//.*$||' module/webroot/script.js >> /tmp/pemakai.txt
           cat module/webroot/index.html >> /tmp/pemakai.txt
-          grep -ohE 'config_[a-z0-9_]+' /tmp/pemakai.txt | sort -u > /tmp/used.txt
+          # \b wajib: tanpa itu nama fungsi seperti update_config_date (upstream,
+          # 2026-09-24) terbaca sebagai toggle config_date yang tak terdefinisi.
+          grep -ohE '\bconfig_[a-z0-9_]+' /tmp/pemakai.txt | sort -u > /tmp/used.txt
           if ! comm -13 /tmp/defined.txt /tmp/used.txt | grep -q .; then
             echo "OK: semua toggle yang dipakai ada di config.sh"
           else

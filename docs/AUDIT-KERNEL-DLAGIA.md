@@ -368,3 +368,63 @@ jadi `\` + baris baru; isi daftarnya tidak berubah.
 Lima issue terbuka di upstream tidak berubah sejak ronde ketiga (#58, #57, #43,
 #25, #20). Triasenya tetap seperti bagian 8.5. Issues di `dlagia/BRENE` tetap
 dimatikan.
+
+## 11. Audit ronde kelima (2026-09-25)
+
+### 11.1 Upstream, ORPHAN, dependency
+
+- Upstream `rrr333nnn333/BRENE` maju empat commit dari `4156b89` ke `9652764`
+  (2026-09-23/24, versi tetap v0.0.68): patch level disimpan di `config.sh`
+  (`CURRENT_YEAR`/`CURRENT_MONTH`) untuk masalah jam "1970", deskripsi modul
+  menampilkan `n/9` fitur SuSFS, "Hide Non-standard /storage/emulated/0 Paths"
+  menyala secara default, dan prop `ro.secureboot.devicelock` ikut di-spoof.
+  Digabung tanpa konflik. Pengguna lama tetap memakai nilai toggle sdcard yang
+  tersimpan; default baru hanya berlaku untuk instalasi baru atau reset.
+- ORPHAN: 42 toggle, 0 yatim, 0 dipakai-tanpa-definisi (sesudah perbaikan 11.2
+  nomor 3).
+- Dependency: `prettier` 3.9.8 → 3.9.9, `prettier-plugin-sh` 0.19.0 → 0.20.2.
+  `prettier --check .` tetap bersih, tidak ada diff format. `actions/checkout`
+  v7.0.1 (`3d3c42e5`) masih yang terbaru.
+
+### 11.2 Bug tersembunyi yang diperbaiki
+
+1. **Patch level di-spoof jadi `--01` / `--05`.** "Reset Settings" di WebUI
+   menyalin `config.sh` bawaan modul, yang berisi `CURRENT_YEAR=''` dan
+   `CURRENT_MONTH=''`. Pada boot berikutnya `post-fs-data.sh` menulis
+   `ro.build.version.security_patch=--01` dan
+   `ro.vendor.build.security_patch=--05`. `boot-completed.sh` memang mengisi
+   tanggal di berkas, tapi spoof di boot yang sama masih memakai variabel yang
+   sudah di-source sebelumnya, jadi nilai rusak bertahan satu boot penuh.
+   Sekarang spoof dilewati kalau tahun/bulan tidak valid (prop asli dibiarkan),
+   dan `update_config_date` ikut memperbarui variabel shell.
+2. **Jam yang belum tersinkron menimpa tanggal tersimpan.** `update_config_date`
+   dipanggil setiap boot di `boot-completed.sh`. Kalau jam masih 1970 (masalah
+   yang justru jadi alasan upstream menyimpan tanggal), tanggal benar yang
+   tersimpan ditimpa 1970. Sekarang tahun di bawah 2025 tidak ditulis.
+3. **Gerbang ORPHAN `rilis-brene.yml` akan gagal di rilis berikutnya.** Pola
+   `config_[a-z0-9_]+` mencocokkan bagian tengah nama fungsi baru upstream
+   `update_config_date`, sehingga `config_date` terbaca sebagai toggle yang
+   dipakai tapi tidak didefinisikan. Pola diberi `\b`. Diuji dua arah: tanpa
+   `\b` gerbang gagal; dengan `\b` lolos, dan membuang satu pemakai toggle
+   tetap memunculkan ORPHAN.
+
+Perbaikan 1 dan 2 memakai `case`, bukan `=~`, karena KernelSU menjalankan
+script modul dengan busybox ash.
+
+### 11.3 Diperiksa, bersih
+
+- `actionlint`, `bash -n`, `shellcheck -S error` pada tujuh script modul,
+  `node --check` pada `script.js`, `prettier --check .`: semua lolos.
+- Migrasi config untuk pengguna lama: loop kunci di `customize.sh` menambahkan
+  `CURRENT_YEAR=''`/`CURRENT_MONTH=''`, lalu `update_config_date` mengisinya
+  saat install. Pembersih kunci usang milik fork hanya menyentuh `config_*`,
+  jadi kedua kunci baru tidak ikut terhapus.
+- `susfs_total_features=9` di-hardcode upstream. Kalau kernel melapor lebih dari
+  sembilan fitur, deskripsi hanya menampilkan angka yang janggal. Kosmetik, tidak
+  diubah.
+
+### 11.4 Issues
+
+Lima issue terbuka di upstream tidak berubah sejak ronde keempat (#58, #57,
+#43, #25, #20), tanpa komentar baru. Tidak ada issue yang ditutup sejak
+2026-09-22. Issues di `dlagia/BRENE` tetap dimatikan.
