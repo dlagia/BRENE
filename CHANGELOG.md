@@ -23,7 +23,7 @@
 - add: install membuang kunci config yang sudah tidak dikenal modul (mis. toggle yang diganti nama upstream)
 - fix: `ro.boot.vbmeta.size` tidak lagi ditulis kosong kalau partisi vbmeta tidak ada
 - improve: WebUI "Suspicious Mounts" menampilkan `None` alih-alih blok kosong
-- improve: rilis tahan re-run, dependency dipin (`actions/checkout` SHA v7.0.1, prettier 3.9.8)
+- improve: rilis tahan re-run, dependency dipin (`actions/checkout` SHA v7.0.1, prettier 3.9.9)
 - fix: nilai Custom Spoof Uname / Verified Boot Hash tidak lagi merusak `config.sh` (escape shell + sed)
 - fix: tombol Verified Boot Hash tidak lagi melapor sukses saat kolomnya kosong
 - fix: glob kosong tidak lagi dikirim ke susfs sebagai path (`/data/local/tmp/*` dan dua saudaranya)
@@ -31,3 +31,8 @@
 - fix: Verified Boot Hash di-trim sebelum disimpan, spasi saja tidak lagi di-spoof ke `ro.boot.vbmeta.digest`
 - fix: Apply sus path hanya mengganti awalan `/sdcard`, bukan setiap kemunculan di tengah path
 - fix: indeks swipe tab tidak lagi mulai dari -1
+- fix: patch level tidak lagi di-spoof jadi `--01` / `--05` sesudah "Reset Settings" (CURRENT_YEAR/CURRENT_MONTH kosong)
+- fix: jam yang belum tersinkron tidak lagi menimpa tanggal patch level tersimpan, dan boot-completed memakai tanggal yang baru ditulis
+- fix: gerbang ORPHAN tidak lagi membaca nama fungsi `update_config_date` sebagai toggle `config_date`
+- fix: uninstall tidak lagi menghapus hard link `ksu_susfs` yang baru dibuat ulang `ksud susfs config enable`
+- improve: WebUI "Reset Settings" langsung mengisi tanggal patch level

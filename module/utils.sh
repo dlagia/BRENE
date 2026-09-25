@@ -72,6 +72,7 @@ spoof_system_properties() {
 	if_prop_exits_resetprop_n "ro.boot.warranty_bit" "0"
 	if_prop_exits_resetprop_n "ro.warranty_bit" "0"
 	if_prop_exits_resetprop_n "ro.force.debuggable" "0"
+	if_prop_exits_resetprop_n "ro.secureboot.devicelock" "1"
 	if_prop_exits_resetprop_n "ro.secureboot.lockstate" "locked"
 	if_prop_exits_resetprop_n "ro.is_ever_orange" "0"
 	if_prop_exits_resetprop_n "ro.bootmode" "normal"
@@ -165,16 +166,48 @@ spoof_date_properties() {
 	if_prop_exits_resetprop_n "ro.vendor_dlkm.build.date" "${new_date_value}"
 }
 
+# Fork dlagia: CURRENT_YEAR/CURRENT_MONTH bisa kosong - "Reset Settings" di WebUI
+# menyalin config.sh bawaan yang berisi CURRENT_YEAR=''. Tanpa penjaga ini
+# post-fs-data men-spoof patch level menjadi "--01" / "--05" sampai boot berikutnya.
+# Nilai yang tidak valid dilewati, prop asli dibiarkan. Pakai case, bukan =~,
+# karena KernelSU menjalankan script modul dengan busybox ash.
+patch_date_valid() {
+	case "${CURRENT_YEAR}" in
+		[0-9][0-9][0-9][0-9]) ;;
+		*) return 1 ;;
+	esac
+	case "${CURRENT_MONTH}" in
+		0[1-9] | 1[0-2]) ;;
+		*) return 1 ;;
+	esac
+}
+
 spoof_os_security_patch_level_property() {
-	YEAR=$(date +%Y)
-	MONTH=$(date +%m)
-	if_prop_exits_resetprop_n "ro.build.version.security_patch" "${YEAR}-${MONTH}-01"
+	patch_date_valid || return 0
+	if_prop_exits_resetprop_n "ro.build.version.security_patch" "${CURRENT_YEAR}-${CURRENT_MONTH}-01"
 }
 
 spoof_vendor_security_patch_level_property() {
-	YEAR=$(date +%Y)
-	MONTH=$(date +%m)
-	if_prop_exits_resetprop_n "ro.vendor.build.security_patch" "${YEAR}-${MONTH}-05"
+	patch_date_valid || return 0
+	if_prop_exits_resetprop_n "ro.vendor.build.security_patch" "${CURRENT_YEAR}-${CURRENT_MONTH}-05"
+}
+
+# Fork dlagia: dua tambahan terhadap versi upstream.
+# 1. Jam yang belum tersinkron (masalah "1970" yang jadi alasan upstream
+#    menyimpan tanggal) tidak boleh menimpa tanggal terakhir yang benar.
+# 2. Variabel shell ikut diperbarui. boot-completed.sh sudah men-source
+#    config.sh sebelum fungsi ini dipanggil, jadi tanpa ini spoof di boot yang
+#    sama masih memakai nilai lama (atau kosong).
+update_config_date() {
+	local year month
+	year=$(date +%Y)
+	month=$(date +%m)
+	[[ "${year}" -ge 2025 ]] || return 0
+
+	sed -i "s/^CURRENT_YEAR=.*/CURRENT_YEAR='${year}'/" "${PERSISTENT_DIR}/config.sh"
+	sed -i "s/^CURRENT_MONTH=.*/CURRENT_MONTH='${month}'/" "${PERSISTENT_DIR}/config.sh"
+	CURRENT_YEAR=${year}
+	CURRENT_MONTH=${month}
 }
 
 brene_sus_path() {

@@ -389,7 +389,12 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 			// Fork dlagia: baca ulang config.sh SESUDAH disalin. Versi lama memakai
 			// configValues yang direkam sebelum reset, jadi semua switch tetap
 			// menampilkan nilai lama padahal config.sh sudah kembali ke default.
-			exec(`cp -f ${MODDIR}/config.sh ${PERSISTENT_DIR} && cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
+			// Tanggal patch level langsung diisi: config.sh bawaan berisi
+			// CURRENT_YEAR='' dan spoof patch level di post-fs-data berikutnya
+			// akan dilewati sampai boot-completed mengisinya.
+			exec(
+				`cp -f ${MODDIR}/config.sh ${PERSISTENT_DIR} && sed -i "s/^CURRENT_YEAR=.*/CURRENT_YEAR='$(date +%Y)'/; s/^CURRENT_MONTH=.*/CURRENT_MONTH='$(date +%m)'/" ${PERSISTENT_DIR}/config.sh && cat ${PERSISTENT_DIR}/config.sh`,
+			).then((result) => {
 				if (result.errno !== 0) {
 					toast(result.stderr)
 					return
