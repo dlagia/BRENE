@@ -72,6 +72,7 @@ spoof_system_properties() {
 	if_prop_exits_resetprop_n "ro.boot.warranty_bit" "0"
 	if_prop_exits_resetprop_n "ro.warranty_bit" "0"
 	if_prop_exits_resetprop_n "ro.force.debuggable" "0"
+	if_prop_exits_resetprop_n "ro.secureboot.devicelock" "1"
 	if_prop_exits_resetprop_n "ro.secureboot.lockstate" "locked"
 	if_prop_exits_resetprop_n "ro.is_ever_orange" "0"
 	if_prop_exits_resetprop_n "ro.bootmode" "normal"
