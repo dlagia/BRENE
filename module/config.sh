@@ -1,8 +1,8 @@
 # shellcheck disable=SC2034
 # shellcheck disable=SC2148
-config_paths_hiding__non_standard_sdcard=0
-config_paths_hiding__non_standard_sdcard_android=1
 config_paths_hiding__data_local_tmp=1
+config_paths_hiding__non_standard_sdcard=1
+config_paths_hiding__non_standard_sdcard_android=1
 
 config_selinux=1
 config_su_compat=1
