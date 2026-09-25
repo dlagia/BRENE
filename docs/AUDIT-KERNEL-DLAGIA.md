@@ -408,6 +408,18 @@ dimatikan.
    `\b` gerbang gagal; dengan `\b` lolos, dan membuang satu pemakai toggle
    tetap memunculkan ORPHAN.
 
+4. **Uninstall menghapus hard link `ksu_susfs` milik ksud.** `uninstall.sh`
+   menjalankan `ksud susfs config enable` lebih dulu. Perintah itu memanggil
+   `reconcile_susfs_link()` (ReSukiSU `assets.rs`), yang mengganti symlink
+   BRENE dengan hard link `ksu_susfs -> ksud`. Baris `rm -f ksu_susfs` sesudahnya
+   langsung menghapus hard link baru itu, jadi manajer SuSFS ksud menyala tanpa
+   `ksu_susfs` sampai `ensure_binaries` membuatnya lagi di boot berikutnya.
+   Sekarang semua `rm` jalan dulu, `enable` paling akhir.
+5. **Reset Settings di WebUI** kini langsung mengisi `CURRENT_YEAR`/`CURRENT_MONTH`
+   sesudah menyalin config bawaan. Tanpa itu, penjaga di nomor 1 membuat spoof
+   patch level dilewati di post-fs-data berikutnya sampai boot-completed
+   mengisi tanggal.
+
 Perbaikan 1 dan 2 memakai `case`, bukan `=~`, karena KernelSU menjalankan
 script modul dengan busybox ash.
 
@@ -419,9 +431,17 @@ script modul dengan busybox ash.
   `CURRENT_YEAR=''`/`CURRENT_MONTH=''`, lalu `update_config_date` mengisinya
   saat install. Pembersih kunci usang milik fork hanya menyentuh `config_*`,
   jadi kedua kunci baru tidak ikut terhapus.
-- `susfs_total_features=9` di-hardcode upstream. Kalau kernel melapor lebih dari
-  sembilan fitur, deskripsi hanya menampilkan angka yang janggal. Kosmetik, tidak
-  diubah.
+- `susfs_total_features=9` di-hardcode upstream. Angka 9 cocok dengan sembilan
+  fitur SuSFS v2 yang dikenal modul (delapan di `cfg_needs` `customize.sh` plus
+  `HIDE_KSU_SUSFS_SYMBOLS`). Tidak diubah.
+- Default baru upstream `config_paths_hiding__non_standard_sdcard=1` menyembunyikan
+  semua folder non-standar di `/storage/emulated/0` dari aplikasi yang di-umount,
+  termasuk folder milik aplikasi itu sendiri (mis. `Telegram`). Hanya berlaku
+  untuk instalasi baru atau sesudah Reset Settings; config tersimpan tidak
+  berubah. Keputusan desain upstream, tidak diubah fork.
+- Semua script modul lain dibaca ulang (`post-fs-data.sh`, `boot-completed.sh`,
+  `customize.sh`, `inotify.sh`, `action.sh`, WebUI): tidak ada temuan baru di luar
+  yang sudah diputuskan di ronde sebelumnya.
 
 ### 11.4 Issues
 

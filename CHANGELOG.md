@@ -34,3 +34,5 @@
 - fix: patch level tidak lagi di-spoof jadi `--01` / `--05` sesudah "Reset Settings" (CURRENT_YEAR/CURRENT_MONTH kosong)
 - fix: jam yang belum tersinkron tidak lagi menimpa tanggal patch level tersimpan, dan boot-completed memakai tanggal yang baru ditulis
 - fix: gerbang ORPHAN tidak lagi membaca nama fungsi `update_config_date` sebagai toggle `config_date`
+- fix: uninstall tidak lagi menghapus hard link `ksu_susfs` yang baru dibuat ulang `ksud susfs config enable`
+- improve: WebUI "Reset Settings" langsung mengisi tanggal patch level
