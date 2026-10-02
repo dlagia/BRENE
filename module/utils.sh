@@ -210,6 +210,22 @@ update_config_date() {
 	CURRENT_MONTH=${month}
 }
 
+# Fork dlagia: baca daftar custom_*.txt satu entri per baris.
+# - Baris terakhir tanpa newline dulu hilang diam-diam: `read` mengembalikan
+#   status gagal untuk baris itu walau isinya terbaca, jadi path terakhir yang
+#   diketik lewat editor atau `echo -n` tidak pernah disembunyikan.
+# - CR dari berkas yang disunting di Windows dibuang; tanpa itu path-nya jadi
+#   "/data/xyz<CR>", yang tidak ada, dan susfs menolaknya tanpa jejak.
+# - Baris kosong, spasi saja, dan komentar '#' dilewati, seperti sebelumnya.
+brene_read_list() {
+	local i
+	while IFS= read -r i || [[ -n "${i}" ]]; do
+		i=${i%$'\r'}
+		[[ -z "${i// /}" || "${i// /}" == "#"* ]] && continue
+		printf '%s\n' "${i}"
+	done < "$1"
+}
+
 brene_sus_path() {
 	if ${SUSFS_BIN} add_sus_path "$1" && [[ "${config_brene_logs}" == "1" ]]; then
 		echo "[sus_path]: $1" >> "${PERSISTENT_DIR}/logs.txt"

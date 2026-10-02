@@ -96,11 +96,15 @@ fi
 
 # Remove Custom ROM Properties
 if [[ "${config_rom_props}" == "1" ]]; then
-	resetprop | grep -iE "${CUSTOM_ROM_NAMES}" | awk -F'[][]' '{print $2}' | while read -r prop; do
-		# Fork dlagia: grep di atas juga mencocokkan NILAI prop, jadi fingerprint
-		# ROM kustom ("Xiaomi/axion_rosemary/...") ikut terhapus dan
-		# getprop ro.build.fingerprint jadi kosong - jauh lebih mencurigakan
-		# daripada nama ROM-nya. Fingerprint diurus spoof_fingerprint_properties.
+	# Fork dlagia: cocokkan NAMA prop saja. Versi upstream menjalankan grep atas
+	# baris "[nama]: [nilai]" utuh, jadi prop yang cuma NILAINYA menyebut ROM
+	# ikut terhapus: ro.build.fingerprint, ro.product.name ("axion_rosemary"),
+	# ro.build.display.id, ro.build.flavor, ro.build.description. Prop stok yang
+	# kosong jauh lebih mencurigakan daripada nama ROM-nya, dan Build.PRODUCT
+	# kosong bisa membuat app gagal mengenali perangkat. Fingerprint diurus
+	# spoof_fingerprint_properties; penjaganya tetap dipasang kalau suatu saat
+	# nama ROM masuk ke nama prop fingerprint.
+	resetprop | awk -F'[][]' '{print $2}' | grep -iE "${CUSTOM_ROM_NAMES}" | while read -r prop; do
 		[[ "${prop}" == *build.fingerprint ]] && continue
 		resetprop -d "${prop}"
 	done
@@ -110,7 +114,10 @@ fi
 
 # Remove Play Integrity Fix Properties
 if [[ "${config_pif_props}" == "1" ]]; then
-	resetprop | grep -iE "pihook|pixelprops|spoof" | awk -F'[][]' '{print $2}' | while read -r prop; do
+	# Fork dlagia: NAMA prop saja, sama seperti Remove Custom ROM Properties di
+	# atas - prop apa pun yang NILAINYA kebetulan memuat "spoof" dulu ikut
+	# dihapus permanen (-p menghapus salinan persist-nya juga).
+	resetprop | awk -F'[][]' '{print $2}' | grep -iE "pihook|pixelprops|spoof" | while read -r prop; do
 		resetprop -d -p "${prop}"
 	done
 fi
@@ -274,42 +281,30 @@ fi
 
 # Load custom_sus_map.txt
 if [[ -e "${PERSISTENT_DIR}/custom_sus_map.txt" ]]; then
-	while IFS= read -r i; do
-		# Skip empty lines or comments
-		[[ -z "${i// /}" || "${i// /}" == "#"* ]] && continue
-
+	brene_read_list "${PERSISTENT_DIR}/custom_sus_map.txt" | while IFS= read -r i; do
 		brene_sus_map "${i}"
-	done < "${PERSISTENT_DIR}/custom_sus_map.txt"
+	done
 fi
 
 # Load custom_sus_path.txt
 if [[ -e "${PERSISTENT_DIR}/custom_sus_path.txt" ]]; then
-	while IFS= read -r i; do
-		# Skip empty lines or comments
-		[[ -z "${i// /}" || "${i// /}" == "#"* ]] && continue
-
+	brene_read_list "${PERSISTENT_DIR}/custom_sus_path.txt" | while IFS= read -r i; do
 		brene_sus_path "${i}"
-	done < "${PERSISTENT_DIR}/custom_sus_path.txt"
+	done
 fi
 
 # Load custom_sus_path_loop.txt
 if [[ -e "${PERSISTENT_DIR}/custom_sus_path_loop.txt" ]]; then
-	while IFS= read -r i; do
-		# Skip empty lines or comments
-		[[ -z "${i// /}" || "${i// /}" == "#"* ]] && continue
-
+	brene_read_list "${PERSISTENT_DIR}/custom_sus_path_loop.txt" | while IFS= read -r i; do
 		brene_sus_path_loop "${i}"
-	done < "${PERSISTENT_DIR}/custom_sus_path_loop.txt"
+	done
 fi
 
 # Load custom_kernel_umount.txt
 if [[ -e "${PERSISTENT_DIR}/custom_kernel_umount.txt" ]]; then
-	while IFS= read -r i; do
-		# Skip empty lines or comments
-		[[ -z "${i// /}" || "${i// /}" == "#"* ]] && continue
-
+	brene_read_list "${PERSISTENT_DIR}/custom_kernel_umount.txt" | while IFS= read -r i; do
 		brene_kernel_umount "${i}"
-	done < "${PERSISTENT_DIR}/custom_kernel_umount.txt"
+	done
 fi
 
 #### Hide the mmapped real file from various maps in /proc/self/, effective only for processes that are marked umounted with uid >= 10000 ####

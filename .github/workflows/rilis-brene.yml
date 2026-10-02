@@ -189,7 +189,8 @@ jobs:
           Zip ini dipakai oleh \`update.json\` lewat tautan \`releases/latest/download/BRENE.zip\`,
           jadi tombol update di manager KernelSU mengambil dari fork ini, bukan dari upstream.
 
-          Kernel yang diaudit untuk fork ini: rosemary 4.14 (dlagia/test), ReSukiSU version code 35158,
-          SuSFS v2.3.0 NON-GKI, 9 fitur SuSFS aktif. Rinciannya di \`docs/AUDIT-KERNEL-DLAGIA.md\`." \
+          Kernel yang diaudit untuk fork ini: rosemary 4.14 (dlagia/test), ReSukiSU sesuai pin
+          \`KSU_PIN\` di \`pins.env\` repo itu, SuSFS v2.3.0 NON-GKI, 9 fitur SuSFS aktif.
+          Rinciannya di \`docs/AUDIT-KERNEL-DLAGIA.md\`." \
             --latest \
             "BRENE.zip" "BRENE-${VERSION}.zip"

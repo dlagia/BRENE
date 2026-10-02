@@ -1,5 +1,10 @@
+#!/system/bin/sh
 # shellcheck disable=SC2154
-# shellcheck disable=SC2148
+# Fork dlagia: satu-satunya script modul yang DIEKSEKUSI langsung (oleh
+# inotifyd di boot-completed.sh), bukan dijalankan ksud lewat busybox sh.
+# Tanpa shebang, eksekusinya bergantung pada fallback ENOEXEC di execvp.
+# Shebang /bin/bash seperti script lain justru gagal: Android tidak punya
+# /bin/bash.
 # Remove "..5.u.S"
 TARGET="..5.u.S"
 TARGET1="/storage/emulated/0/${TARGET}"

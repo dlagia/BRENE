@@ -11,6 +11,11 @@
 
 # Fork dlagia
 
+- fix: "Remove Custom ROM Properties" dan "Remove Play Integrity Fix Properties" hanya mencocokkan NAMA prop; dulu prop stok yang NILAINYA menyebut ROM (`ro.product.name`, `ro.build.display.id`, `ro.build.flavor`) ikut terhapus
+- fix: baris terakhir `custom_*.txt` tanpa newline tidak lagi hilang, dan CR dari berkas Windows dibuang
+- fix: `module/tools/susfs` ditandai binary di `.gitattributes`, supaya byte CR di binari baru tidak dibuang git
+- fix: `inotify.sh` punya shebang `/system/bin/sh` (dieksekusi langsung oleh inotifyd)
+- improve: catatan rilis tidak lagi menulis version code ReSukiSU yang basi
 - fix: gerbang audit ORPHAN yang tidak pernah bisa menyala (config.sh terhitung memakai dirinya sendiri)
 - add: gerbang audit baru - setiap toggle wajib punya switch di WebUI, dan semua JavaScript WebUI dicek `node --check`
 - fix: `uninstall.sh` menyalakan kembali manajer SuSFS bawaan ksud yang dimatikan saat install
