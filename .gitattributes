@@ -1,2 +1,7 @@
 * text eol=lf
 *.jpg binary
+# Fork dlagia: binari ELF, bukan teks. Dengan `* text eol=lf` saja, git
+# membuang setiap byte CR yang diikuti LF saat berkas di-add, jadi binari
+# susfs baru yang kebetulan memuat urutan 0x0D 0x0A masuk repo dalam
+# keadaan rusak tanpa satu pun error.
+module/tools/susfs binary
