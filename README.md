@@ -1,4 +1,4 @@
-# BRENE - A SuSFS/KernelSU module for SuSFS patched kernels
+# BRENE - KernelSU module with SuSFS support and more
 
 > **Fork dlagia.** Fork ini dipakai untuk kernel [dlagia/test](https://github.com/dlagia/test)
 > (rosemary 4.14, ReSukiSU + SuSFS v2.3.0 NON-GKI). Bedanya dengan upstream: `updateJson`/`zipUrl`

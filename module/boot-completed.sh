@@ -18,16 +18,15 @@ update_config_date
 # Update Description
 susfs_total_features=9
 susfs_version=$(${SUSFS_BIN} show version)
-susfs_variant=$(${SUSFS_BIN} show variant)
 susfs_features_number=$(${SUSFS_BIN} show enabled_features | wc -l)
 kernel_version=$(cat /proc/version | awk '{print $3}' | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
-description="A SuSFS/KernelSU module for SuSFS patched kernels"
+description="KernelSU module with SuSFS support and more"
 if [[ "${susfs_version}" == "v2"* ]]; then
 	status="Active ✅"
-	${KSU_BIN} module config set override.description "[Status: ${status} | Kernel Version: ${kernel_version} | SuSFS: ${susfs_version} (${susfs_variant}) | SuSFS Features: ${susfs_features_number}/${susfs_total_features} enabled] ${description}"
+	${KSU_BIN} module config set override.description "[Status: ${status} | Kernel Version: ${kernel_version} | SuSFS: ${susfs_version} | SuSFS Kernel Features: ${susfs_features_number}/${susfs_total_features} enabled] ${description}"
 else
 	status="Not Working ❌"
-	${KSU_BIN} module config set override.description "[Status: ${status} | Kernel Version: ${kernel_version} | SuSFS: ${susfs_version} (${susfs_variant}) | SuSFS Features: ${susfs_features_number}/${susfs_total_features} enabled] ${description}"
+	${KSU_BIN} module config set override.description "[Status: ${status} | Kernel Version: ${kernel_version} | SuSFS: ${susfs_version} | SuSFS Kernel Features: ${susfs_features_number}/${susfs_total_features} enabled] ${description}"
 fi
 
 # SU Compat
@@ -76,7 +75,7 @@ fi
 
 # Disable Child Process Restrictions
 if [[ "${config_disable_child_process_restrictions}" == "1" ]]; then
-	resetprop_n persist.sys.fflag.override.settings_enable_monitor_phantom_procs false
+	resetprop -n -p persist.sys.fflag.override.settings_enable_monitor_phantom_procs false
 fi
 
 # Max Saturation
@@ -87,6 +86,12 @@ fi
 # Show Refresh Rate
 if [[ "${config_show_refresh_rate}" == "1" ]]; then
 	service call SurfaceFlinger 1034 i32 1
+fi
+
+# Set logcat and logd buffer to 64K
+if [[ "${config_shrink_buffer_size}" == "1" ]]; then
+	logcat -G 64K
+	resetprop -n -p persist.logd.size 65536
 fi
 
 # SELinux Enforcing
@@ -122,6 +127,52 @@ if [[ "${config_pif_props}" == "1" ]]; then
 	done
 fi
 
+# Spoof /system/lib64/libstagefright.so
+if [[ "${config_spoof_libstagefright}" == "1" ]]; then
+	path=/system/lib64/libstagefright.so
+	file_name=$(basename "${path}")
+	fake_file_path="${PERSISTENT_DIR}/fake_files/${file_name}"
+
+	[[ ! -f "${fake_file_path}" ]] && {
+		touch "${fake_file_path}"
+	}
+
+	brene_open_redirect "${path}" "${fake_file_path}" '3'
+fi
+
+# Hide LineageOS Strings
+if [[ "${config_hide_lineage_strings}" == "1" ]]; then
+	find /system /system_ext /vendor /product \( -iname "*sepolicy.cil" -o -iname "*file_contexts" \) | while read -r path; do
+		file_name=$(basename "${path}")
+		fake_file_path="${PERSISTENT_DIR}/fake_files/${file_name}"
+
+		[[ ! -f "${fake_file_path}" ]] && {
+			touch "${fake_file_path}"
+		}
+
+		brene_open_redirect "${path}" "${fake_file_path}" '3'
+	done
+
+	find /system /system_ext /vendor /product -iname "*.rc" | while read -r path; do
+		if grep -iq "lineage" "${path}"; then
+			file_name=$(basename "${path}")
+			fake_file_path="${PERSISTENT_DIR}/fake_files/${file_name}"
+
+			[[ ! -f "${fake_file_path}" ]] && {
+				touch "${fake_file_path}"
+			}
+
+			brene_open_redirect "${path}" "${fake_file_path}" '3'
+		fi
+	done
+
+	path=/system_ext/etc/permissions/Updater.xml
+	file_name=$(basename "${path}")
+	fake_file_path="${PERSISTENT_DIR}/fake_files/${file_name}"
+	[[ ! -f "${fake_file_path}" ]] && touch "${fake_file_path}"
+	brene_open_redirect "${path}" "${fake_file_path}" '3'
+fi
+
 #### Hide some sus paths, effective only for processes that are marked umounted with uid >= 10000 ####
 ## First we need to wait until files are accessible in /storage/emulated/0/Android ##
 until [[ -e "/storage/emulated/0/Android" ]]; do sleep 1; done
@@ -130,6 +181,9 @@ until [[ -e "/storage/emulated/0/Android" ]]; do sleep 1; done
 # Spoof System Properties
 if [[ "${config_spoof_system_properties}" == "1" ]]; then
 	spoof_system_properties
+
+	# set after vold settles so the encrypted transition still reaches vendor init triggers
+	if_prop_exits_resetprop_n "ro.crypto.state" "encrypted"
 fi
 # Spoof Fingerprint Properties
 if [[ "${config_spoof_fingerprint_properties}" == "1" ]]; then
@@ -304,6 +358,15 @@ fi
 if [[ -e "${PERSISTENT_DIR}/custom_kernel_umount.txt" ]]; then
 	brene_read_list "${PERSISTENT_DIR}/custom_kernel_umount.txt" | while IFS= read -r i; do
 		brene_kernel_umount "${i}"
+	done
+fi
+
+# Load custom_open_redirect.txt
+# Fork dlagia: lewat brene_read_list seperti custom_*.txt lain, supaya baris
+# terakhir tanpa newline tidak hilang dan CR tidak ikut ke uid_scheme ("3<CR>").
+if [[ -e "${PERSISTENT_DIR}/custom_open_redirect.txt" ]]; then
+	brene_read_list "${PERSISTENT_DIR}/custom_open_redirect.txt" | while read -r path new_path uid_scheme; do
+		brene_open_redirect "${path}" "${new_path}" "${uid_scheme}"
 	done
 fi
 

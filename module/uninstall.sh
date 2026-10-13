@@ -12,6 +12,16 @@ rm -f "${SUSFS_BIN}"
 rm -f "${DEST_BIN_DIR}/sus"
 rm -f "${DEST_BIN_DIR}/ksu_susfs"
 
+# Tambahan fork dlagia: boot-completed.sh menulis dua prop PERSIST (resetprop -p),
+# dan keduanya menyala secara default sejak upstream v0.0.71. Prop persist
+# bertahan sesudah modul dibongkar, jadi tanpa ini buffer logcat tetap 64K dan
+# pembatasan proses anak tetap mati selamanya. Hanya dihapus kalau nilainya
+# masih persis nilai yang ditulis BRENE - setelan yang diubah pemilik lewat
+# Opsi Pengembang dibiarkan.
+[[ "$(getprop persist.logd.size)" == "65536" ]] && resetprop -p -d persist.logd.size
+[[ "$(getprop persist.sys.fflag.override.settings_enable_monitor_phantom_procs)" == "false" ]] \
+	&& resetprop -p -d persist.sys.fflag.override.settings_enable_monitor_phantom_procs
+
 # Tambahan fork dlagia: kembalikan kendali SuSFS ke ksud.
 # customize.sh mematikan manajer SuSFS bawaan ksud (`ksud susfs config disable`)
 # supaya tidak menimpa konfigurasi BRENE di tahap boot-completed. Kalau BRENE

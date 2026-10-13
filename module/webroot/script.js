@@ -59,6 +59,7 @@ const configs = [
 	{ id: 'spoof_uname' },
 	{ id: 'spoof_hosts' },
 	{ id: 'hide_addon_d' },
+	{ id: 'shrink_buffer_size' },
 	{ id: 'custom_spoof_uname' },
 	{ id: 'hide_suspicious_pty' },
 	{ id: 'hide_custom_recovery' },
@@ -123,7 +124,13 @@ exec("cat /proc/version | awk '{print $3}' && uname -r").then((result) => {
 		container.innerText = 'Failed to load'
 		return
 	}
-	container.innerText = `Default: ${result.stdout.replace('\n', '\nSpoofed: ')}`
+
+	const [procVersion, uname] = result.stdout.split('\n')
+	if (procVersion === uname) {
+		container.innerText = `Default: ${procVersion}`
+	} else {
+		container.innerText = `Default: ${procVersion}\nSpoofed: ${uname}`
+	}
 })
 
 // Load Device Model Status
@@ -390,10 +397,10 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 			// configValues yang direkam sebelum reset, jadi semua switch tetap
 			// menampilkan nilai lama padahal config.sh sudah kembali ke default.
 			// Tanggal patch level langsung diisi: config.sh bawaan berisi
-			// CURRENT_YEAR='' dan spoof patch level di post-fs-data berikutnya
+			// CURRENT_YEAR/MONTH/DAY='' dan spoof patch level di post-fs-data berikutnya
 			// akan dilewati sampai boot-completed mengisinya.
 			exec(
-				`cp -f ${MODDIR}/config.sh ${PERSISTENT_DIR} && sed -i "s/^CURRENT_YEAR=.*/CURRENT_YEAR='$(date +%Y)'/; s/^CURRENT_MONTH=.*/CURRENT_MONTH='$(date +%m)'/" ${PERSISTENT_DIR}/config.sh && cat ${PERSISTENT_DIR}/config.sh`,
+				`cp -f ${MODDIR}/config.sh ${PERSISTENT_DIR} && sed -i "s/^CURRENT_YEAR=.*/CURRENT_YEAR='$(date +%Y)'/; s/^CURRENT_MONTH=.*/CURRENT_MONTH='$(date +%m)'/; s/^CURRENT_DAY=.*/CURRENT_DAY='$(date +%d)'/" ${PERSISTENT_DIR}/config.sh && cat ${PERSISTENT_DIR}/config.sh`,
 			).then((result) => {
 				if (result.errno !== 0) {
 					toast(result.stderr)
@@ -499,6 +506,7 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 	const mapField = document.getElementById('custom_sus_map_text_field')
 	const pathField = document.getElementById('custom_sus_path_text_field')
 	const loopField = document.getElementById('custom_sus_path_loop_text_field')
+	const openRedirectField = document.getElementById('custom_open_redirect_text_field')
 	const applyButton = document.getElementById('unified_apply_button')
 	const tabs = document.getElementById('sus_tabs')
 	const scrollContainer = document.getElementById('horizontal_scroll_container')
@@ -512,6 +520,9 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 	})
 	exec(`cat ${PERSISTENT_DIR}/custom_sus_path_loop.txt`).then((result) => {
 		loopField.value = result.errno === 0 ? `${result.stdout}` : ''
+	})
+	exec(`cat ${PERSISTENT_DIR}/custom_open_redirect.txt`).then((result) => {
+		openRedirectField.value = result.errno === 0 ? `${result.stdout}` : ''
 	})
 
 	// Tabs and Scroll Sync
@@ -554,12 +565,16 @@ exec(`cat ${PERSISTENT_DIR}/config.sh`).then((result) => {
 				file = 'custom_sus_path_loop.txt'
 				content = loopField.value
 				break
+			case 3:
+				file = 'custom_open_redirect.txt'
+				content = openRedirectField.value
+				break
 		}
 
 		if (file) {
 			if (content === '') {
 				exec(`printf '' > ${PERSISTENT_DIR}/${file}`).then((result) => {
-					toast(result.errno === 0 ? 'Success' : result.stderr)
+					toast(result.errno === 0 ? 'Success, reboot to apply' : result.stderr)
 				})
 			} else {
 				// Fork dlagia: hanya awalan path. replaceAll polos juga mengubah
@@ -572,7 +587,7 @@ cat <<'UNIQUE_EOF' > ${PERSISTENT_DIR}/${file}
 ${content}
 UNIQUE_EOF
 				`).then((result) => {
-					toast(result.errno === 0 ? 'Success' : result.stderr)
+					toast(result.errno === 0 ? 'Success, reboot to apply' : result.stderr)
 				})
 			}
 		}
