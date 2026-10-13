@@ -225,6 +225,10 @@ spoof_vendor_security_patch_level_property() {
 update_config_date() {
 	local now year month day
 	now=$(busybox date +%Y-%m-%d)
+	case "${now}" in
+		[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]) ;;
+		*) return 0 ;;
+	esac
 	year=${now%%-*}
 	month=${now#*-}
 	month=${month%-*}
