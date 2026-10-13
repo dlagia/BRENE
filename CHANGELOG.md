@@ -21,7 +21,8 @@
 - fix: `custom_open_redirect.txt` dibaca lewat `brene_read_list` (baris terakhir tanpa newline tidak hilang, CR tidak ikut ke uid_scheme)
 - fix: berkas palsu `/system/etc/hosts` kini 56 byte, sama dengan ukuran yang di-spoof `add_sus_kstat_statically` (dulu 57)
 - improve: cek fitur kernel saat install tahu "Spoof /system/etc/hosts" kini juga butuh `CONFIG_KSU_SUSFS_OPEN_REDIRECT`
-- fix: uninstall menghapus `persist.logd.size` dan prop phantom procs yang ditulis BRENE, kalau nilainya belum diubah pemilik
+- fix: uninstall menghapus `persist.logd.size` dan prop phantom procs yang ditulis BRENE, hanya kalau toggle-nya menyala dan nilainya belum diubah
+- fix: tanggal patch level tidak diperbarui kalau `date` memulangkan bentuk rusak (dulu `bad number` di log)
 - fix: "Remove Custom ROM Properties" dan "Remove Play Integrity Fix Properties" hanya mencocokkan NAMA prop; dulu prop stok yang NILAINYA menyebut ROM (`ro.product.name`, `ro.build.display.id`, `ro.build.flavor`) ikut terhapus
 - fix: baris terakhir `custom_*.txt` tanpa newline tidak lagi hilang, dan CR dari berkas Windows dibuang
 - fix: `module/tools/susfs` ditandai binary di `.gitattributes`, supaya byte CR di binari baru tidak dibuang git

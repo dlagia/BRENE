@@ -7,20 +7,27 @@ SUSFS_BIN=/data/adb/ksu/bin/susfs
 PERSISTENT_DIR=/data/adb/brene
 DEST_BIN_DIR=/data/adb/ksu/bin
 
+# Tambahan fork dlagia: boot-completed.sh menulis dua prop PERSIST (resetprop -p),
+# dan keduanya menyala secara default sejak upstream v0.0.71. Prop persist
+# bertahan sesudah modul dibongkar, jadi tanpa ini buffer logcat tetap 64K dan
+# pembatasan proses anak tetap mati selamanya. Dihapus hanya kalau toggle-nya
+# menyala di config.sh (dibaca SEBELUM folder itu dihapus) DAN nilainya masih
+# persis nilai yang ditulis BRENE. Toggle mati = prop milik pemilik (mis. dari
+# Opsi Pengembang), dibiarkan.
+brene_toggle_on() {
+	grep -q "^$1=1" "${PERSISTENT_DIR}/config.sh" 2> /dev/null
+}
+if brene_toggle_on config_shrink_buffer_size && [[ "$(getprop persist.logd.size)" == "65536" ]]; then
+	resetprop -p -d persist.logd.size
+fi
+if brene_toggle_on config_disable_child_process_restrictions && [[ "$(getprop persist.sys.fflag.override.settings_enable_monitor_phantom_procs)" == "false" ]]; then
+	resetprop -p -d persist.sys.fflag.override.settings_enable_monitor_phantom_procs
+fi
+
 rm -rf "${PERSISTENT_DIR}"
 rm -f "${SUSFS_BIN}"
 rm -f "${DEST_BIN_DIR}/sus"
 rm -f "${DEST_BIN_DIR}/ksu_susfs"
-
-# Tambahan fork dlagia: boot-completed.sh menulis dua prop PERSIST (resetprop -p),
-# dan keduanya menyala secara default sejak upstream v0.0.71. Prop persist
-# bertahan sesudah modul dibongkar, jadi tanpa ini buffer logcat tetap 64K dan
-# pembatasan proses anak tetap mati selamanya. Hanya dihapus kalau nilainya
-# masih persis nilai yang ditulis BRENE - setelan yang diubah pemilik lewat
-# Opsi Pengembang dibiarkan.
-[[ "$(getprop persist.logd.size)" == "65536" ]] && resetprop -p -d persist.logd.size
-[[ "$(getprop persist.sys.fflag.override.settings_enable_monitor_phantom_procs)" == "false" ]] \
-	&& resetprop -p -d persist.sys.fflag.override.settings_enable_monitor_phantom_procs
 
 # Tambahan fork dlagia: kembalikan kendali SuSFS ke ksud.
 # customize.sh mematikan manajer SuSFS bawaan ksud (`ksud susfs config disable`)
