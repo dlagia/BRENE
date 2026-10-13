@@ -67,7 +67,6 @@ spoof_system_properties() {
 	if_prop_exits_resetprop_n "ro.build.type" "user"
 	if_prop_exits_resetprop_n "ro.build.tags" "release-keys"
 	if_prop_exits_resetprop_n "ro.build.keys" "release-keys"
-	if_prop_exits_resetprop_n "ro.crypto.state" "encrypted"
 	if_prop_exits_resetprop_n "ro.allow.mock.location" "0"
 	if_prop_exits_resetprop_n "ro.boot.warranty_bit" "0"
 	if_prop_exits_resetprop_n "ro.warranty_bit" "0"
@@ -166,8 +165,8 @@ spoof_date_properties() {
 	if_prop_exits_resetprop_n "ro.vendor_dlkm.build.date" "${new_date_value}"
 }
 
-# Fork dlagia: CURRENT_YEAR/CURRENT_MONTH bisa kosong - "Reset Settings" di WebUI
-# menyalin config.sh bawaan yang berisi CURRENT_YEAR=''. Tanpa penjaga ini
+# Fork dlagia: CURRENT_YEAR/CURRENT_MONTH/CURRENT_DAY bisa kosong - "Reset Settings"
+# di WebUI menyalin config.sh bawaan yang berisi CURRENT_YEAR=''. Tanpa penjaga ini
 # post-fs-data men-spoof patch level menjadi "--01" / "--05" sampai boot berikutnya.
 # Nilai yang tidak valid dilewati, prop asli dibiarkan. Pakai case, bukan =~,
 # karena KernelSU menjalankan script modul dengan busybox ash.
@@ -180,16 +179,39 @@ patch_date_valid() {
 		0[1-9] | 1[0-2]) ;;
 		*) return 1 ;;
 	esac
+	case "${CURRENT_DAY}" in
+		0[1-9] | [12][0-9] | 3[01]) ;;
+		*) return 1 ;;
+	esac
+}
+
+# Bulan patch level ala TEESimulator (upstream v0.0.70): sebelum tanggal 5 patch
+# bulan ini dianggap belum terbit, jadi dipakai bulan sebelumnya. Cetak "YYYY-MM".
+# Fork dlagia: upstream menghitung $((CURRENT_MONTH - 1)) langsung, dan busybox ash
+# membaca "08"/"09" sebagai oktal tidak sah -> "arithmetic syntax error", patch
+# level jadi "2026--01" tiap tanggal 1-4 Agustus dan September. Nol di depan
+# dibuang dulu (${x#0}), karena ash tidak mengenal awalan basis 10#.
+patch_level_month() {
+	local year=${CURRENT_YEAR} month=${CURRENT_MONTH#0} day=${CURRENT_DAY#0}
+	if [[ "${day}" -lt 5 ]]; then
+		if [[ "${month}" -ge 2 ]]; then
+			month=$((month - 1))
+		else
+			month=12
+			year=$((year - 1))
+		fi
+	fi
+	printf '%s-%02d\n' "${year}" "${month}"
 }
 
 spoof_os_security_patch_level_property() {
 	patch_date_valid || return 0
-	if_prop_exits_resetprop_n "ro.build.version.security_patch" "${CURRENT_YEAR}-${CURRENT_MONTH}-01"
+	if_prop_exits_resetprop_n "ro.build.version.security_patch" "$(patch_level_month)-01"
 }
 
 spoof_vendor_security_patch_level_property() {
 	patch_date_valid || return 0
-	if_prop_exits_resetprop_n "ro.vendor.build.security_patch" "${CURRENT_YEAR}-${CURRENT_MONTH}-05"
+	if_prop_exits_resetprop_n "ro.vendor.build.security_patch" "$(patch_level_month)-05"
 }
 
 # Fork dlagia: dua tambahan terhadap versi upstream.
@@ -198,16 +220,23 @@ spoof_vendor_security_patch_level_property() {
 # 2. Variabel shell ikut diperbarui. boot-completed.sh sudah men-source
 #    config.sh sebelum fungsi ini dipanggil, jadi tanpa ini spoof di boot yang
 #    sama masih memakai nilai lama (atau kosong).
+# Tanggal diambil dari SATU panggilan date, supaya tahun/bulan/hari tidak bisa
+# berasal dari dua detik berbeda yang mengapit pergantian hari.
 update_config_date() {
-	local year month
-	year=$(date +%Y)
-	month=$(date +%m)
+	local now year month day
+	now=$(busybox date +%Y-%m-%d)
+	year=${now%%-*}
+	month=${now#*-}
+	month=${month%-*}
+	day=${now##*-}
 	[[ "${year}" -ge 2025 ]] || return 0
 
 	sed -i "s/^CURRENT_YEAR=.*/CURRENT_YEAR='${year}'/" "${PERSISTENT_DIR}/config.sh"
 	sed -i "s/^CURRENT_MONTH=.*/CURRENT_MONTH='${month}'/" "${PERSISTENT_DIR}/config.sh"
+	sed -i "s/^CURRENT_DAY=.*/CURRENT_DAY='${day}'/" "${PERSISTENT_DIR}/config.sh"
 	CURRENT_YEAR=${year}
 	CURRENT_MONTH=${month}
+	CURRENT_DAY=${day}
 }
 
 # Fork dlagia: baca daftar custom_*.txt satu entri per baris.
@@ -244,6 +273,12 @@ brene_sus_map() {
 brene_set_uname() {
 	if ${SUSFS_BIN} set_uname "$1" "$2" && [[ "${config_brene_logs}" == "1" ]]; then
 		echo "[set_uname]: $1 $2" >> "${PERSISTENT_DIR}/logs.txt"
+	fi
+}
+brene_open_redirect() {
+	brene_clone_perm "$2" "$1"
+	if ${SUSFS_BIN} add_open_redirect "$1" "$2" "$3" && [[ "${config_brene_logs}" == "1" ]]; then
+		echo "[open_redirect]: $1 $2 $3" >> "${PERSISTENT_DIR}/logs.txt"
 	fi
 }
 brene_kernel_umount() {

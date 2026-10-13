@@ -2,15 +2,26 @@
 
 # Supports SuSFS 2.2.0 and 2.3.0+
 
-- refactor: "Spoof OS/Vendor Security Patch Level Property" and fix issues on some devices (1970 issue)
-- improve: add total SuSFS features to module description
-- change: enable "Hide Non-standard /storage/emulated/0 Paths" by default
-- improve: spoof ro.secureboot.devicelock prop
-- improve: webui: update descriptions, change order, and minor fixes and improvements
-- improve: spoof ro.oem_unlock_supported prop to 0 (hide OEM unlocking toggle)
+- improve: Spoof /system/etc/hosts: use open_redirect to spoof it as a stock hosts file
+- improve: simplify "Reset fake_files folder" code
+- fix: set ro.crypto.state after boot completed to preserve vendor crypto transition triggers (#61)
+- add: webui: UID Filter module
+- Merge branch 'main' of https://github.com/rrr333nnn333/BRENE
+- improve: webui: add some useful links to Recommended Modules
+- change: webui: move "Spoof /system/etc/hosts" to Custom ROM section
+- change: disable some options by default
+- change: webui: move "Custom Spoof Uname" to SuSFS section
+- improve: webui: add example for OPEN_REDIRECT and replace "/storage/emulated/0" with "/sdcard"
+- add: "Set logcat and logd buffer to 64K" toggle
 
 # Fork dlagia
 
+- fix: patch level tidak lagi di-spoof jadi `2026--01` pada tanggal 1-4 Agustus dan September (busybox ash membaca bulan `08`/`09` sebagai oktal)
+- fix: `CURRENT_DAY` ikut divalidasi, ikut diisi "Reset Settings" di WebUI, dan tahun/bulan/hari diambil dari satu panggilan `date`
+- fix: `custom_open_redirect.txt` dibaca lewat `brene_read_list` (baris terakhir tanpa newline tidak hilang, CR tidak ikut ke uid_scheme)
+- fix: berkas palsu `/system/etc/hosts` kini 56 byte, sama dengan ukuran yang di-spoof `add_sus_kstat_statically` (dulu 57)
+- improve: cek fitur kernel saat install tahu "Spoof /system/etc/hosts" kini juga butuh `CONFIG_KSU_SUSFS_OPEN_REDIRECT`
+- fix: uninstall menghapus `persist.logd.size` dan prop phantom procs yang ditulis BRENE, kalau nilainya belum diubah pemilik
 - fix: "Remove Custom ROM Properties" dan "Remove Play Integrity Fix Properties" hanya mencocokkan NAMA prop; dulu prop stok yang NILAINYA menyebut ROM (`ro.product.name`, `ro.build.display.id`, `ro.build.flavor`) ikut terhapus
 - fix: baris terakhir `custom_*.txt` tanpa newline tidak lagi hilang, dan CR dari berkas Windows dibuang
 - fix: `module/tools/susfs` ditandai binary di `.gitattributes`, supaya byte CR di binari baru tidak dibuang git

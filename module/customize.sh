@@ -52,12 +52,11 @@ fi
 
 # Reset module description
 susfs_total_features=9
-susfs_variant=$(${SUSFS_BIN} show variant)
 susfs_features_number=$(${SUSFS_BIN} show enabled_features | wc -l)
 kernel_version=$(cat /proc/version | awk '{print $3}' | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
-description="A SuSFS/KernelSU module for SuSFS patched kernels"
+description="KernelSU module with SuSFS support and more"
 status="Waiting for reboot ⏱️"
-${KSU_BIN} module config set override.description "[Status: ${status} | Kernel Version: ${kernel_version} | SuSFS: ${susfs_version} (${susfs_variant}) | SuSFS Features: ${susfs_features_number}/${susfs_total_features} enabled] ${description}"
+${KSU_BIN} module config set override.description "[Status: ${status} | Kernel Version: ${kernel_version} | SuSFS: ${susfs_version} | SuSFS Kernel Features: ${susfs_features_number}/${susfs_total_features} enabled] ${description}"
 
 # Disable other SuSFS modules
 [[ -e "${KSU_MODULES_DIR}/susfs4ksu" ]] && {
@@ -67,7 +66,7 @@ ${KSU_BIN} module config set override.description "[Status: ${status} | Kernel V
 	touch "${KSU_MODULES_DIR}/susfs_manager/disable" && echo '[✅] Disabling other SuSFS module'
 }
 
-echo '[✅] Preparing brene persistent directory (/data/adb/brene)'
+echo "[✅] Preparing brene persistent directory (${PERSISTENT_DIR})"
 mkdir -p "${PERSISTENT_DIR}"
 
 files="
@@ -75,6 +74,7 @@ custom_sus_map.txt
 custom_kernel_umount.txt
 custom_sus_path.txt
 custom_sus_path_loop.txt
+custom_open_redirect.txt
 "
 for file in ${files}; do
 	if [[ ! -f "${PERSISTENT_DIR}/${file}" ]]; then
@@ -115,8 +115,9 @@ fi
 
 update_config_date
 
-# Remove fake_files folder
+# Reset fake_files folder
 [[ -d "${PERSISTENT_DIR}/fake_files" ]] && rm -rf "${PERSISTENT_DIR}/fake_files"
+mkdir -p "${PERSISTENT_DIR}/fake_files"
 
 # ============================================================================
 # Tambahan fork dlagia (lihat docs/AUDIT-KERNEL-DLAGIA.md)
@@ -153,6 +154,7 @@ config_hide_framework_res_apk=CONFIG_KSU_SUSFS_SUS_MAP
 config_hide_sus_mnts_for_non_su_procs=CONFIG_KSU_SUSFS_SUS_MOUNT
 config_fix_data_local_tmp_inconsistencies=CONFIG_KSU_SUSFS_SUS_KSTAT
 config_spoof_hosts=CONFIG_KSU_SUSFS_SUS_KSTAT
+config_spoof_hosts=CONFIG_KSU_SUSFS_OPEN_REDIRECT
 config_spoof_uname=CONFIG_KSU_SUSFS_SPOOF_UNAME
 config_custom_spoof_uname=CONFIG_KSU_SUSFS_SPOOF_UNAME
 config_spoof_cmdline_or_bootconfig=CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
@@ -186,7 +188,7 @@ rm -rf "${MODDIR}"
 cp -rp "${MODPATH}" "${MODULES_PATH}"
 
 (
-	sleep 3
+	sleep 1
 	rm -rf "${MODPATH}"
 	rm "${MODDIR}/update"
 ) & # fork in background

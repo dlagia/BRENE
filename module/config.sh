@@ -1,15 +1,15 @@
 # shellcheck disable=SC2034
 # shellcheck disable=SC2148
 config_paths_hiding__data_local_tmp=1
-config_paths_hiding__non_standard_sdcard=1
+config_paths_hiding__non_standard_sdcard=0
 config_paths_hiding__non_standard_sdcard_android=1
 
 config_selinux=1
 config_su_compat=1
 config_spoof_uname=1
-config_spoof_hosts=1
 config_selinux_hide=1
 config_kernel_umount=1
+config_shrink_buffer_size=1
 config_hide_custom_recovery=1
 config_enable_avc_log_spoofing=1
 config_hide_sus_mnts_for_non_su_procs=1
@@ -21,12 +21,14 @@ config_spoof_utc_properties=1
 config_spoof_date_properties=1
 config_spoof_os_security_patch_level_property=1
 config_spoof_vendor_security_patch_level_property=1
+config_disable_child_process_restrictions=1
 
 config_pif_props=0
 config_rom_props=0
 config_saturation=0
 config_brene_logs=0
 config_enable_log=0
+config_spoof_hosts=0
 config_hide_addon_d=0
 config_usb_debugging=0
 config_show_refresh_rate=0
@@ -40,10 +42,10 @@ config_hide_custom_rom_paths=0
 config_hide_custom_rom_paths_2=0
 config_hide_framework_res_apk=0
 config_spoof_cmdline_or_bootconfig=0
-config_disable_child_process_restrictions=0
 
 config_spoof_verified_boot_hash=''
 config_custom_uname_kernel_release='default'
 config_custom_uname_kernel_version='default'
 CURRENT_YEAR=''
 CURRENT_MONTH=''
+CURRENT_DAY=''

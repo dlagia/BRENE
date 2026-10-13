@@ -64,21 +64,6 @@ true > "${PERSISTENT_DIR}/logs.txt"
 ## *Run 'ksu_susfs add_open_redirect' for more details of <uid_scheme> ##
 # ${SUSFS_BIN} add_open_redirect '/system/etc/hosts' '/data/local/tmp/my_hosts' '0'
 
-# Spoof /system/lib64/libstagefright.so
-if [[ "${config_spoof_libstagefright}" == "1" ]]; then
-	path=/system/lib64/libstagefright.so
-	file_name=$(basename "${path}")
-	fake_file_path="${PERSISTENT_DIR}/fake_files/${file_name}"
-
-	[[ ! -d "${PERSISTENT_DIR}/fake_files" ]] && mkdir -p "${PERSISTENT_DIR}/fake_files"
-	[[ ! -f "${fake_file_path}" ]] && {
-		touch "${fake_file_path}"
-	}
-
-	brene_clone_perm "${fake_file_path}" "${path}"
-	${SUSFS_BIN} add_open_redirect "${path}" "${fake_file_path}" '3'
-fi
-
 #### Spoof /proc/cmdline or /proc/bootconfig, effective for all processes ####
 # No root process detects it for now, and this spoofing won't help much actually #
 # /proc/bootconfig #
@@ -155,7 +140,7 @@ if [[ "${config_spoof_uname}" == "1" ]]; then
 
 	if [[ "${SUSFS_VARIANT}" == "GKI" ]]; then
 		kmi=$(${KSU_BIN} boot-info current-kmi | cut -d'-' -f1)
-		uname_kernel_release="${kernel_version}-${kmi}-9-g$(shuf -i 10000000-99999999 -n 1)" # e.g., "6.1.145-android14-9-g00000000"
+		uname_kernel_release="${kernel_version}-${kmi}-$(shuf -i 1-9 -n 1)-g$(shuf -i 10000000-99999999 -n 1)-ab$(shuf -i 10000000-99999999 -n 1)" # e.g., "6.1.145-android14-9-g00000000-ab00000000"
 
 		brene_set_uname "${uname_kernel_release}" "${uname_kernel_version}"
 	else
@@ -217,37 +202,6 @@ if [[ "${config_hide_custom_rom_paths_2}" == "1" ]]; then
 	done
 fi
 
-# Hide LineageOS Strings
-if [[ "${config_hide_lineage_strings}" == "1" ]]; then
-	find /system /system_ext /vendor /product \( -iname "*sepolicy.cil" -o -iname "*file_contexts" \) | while read -r path; do
-		file_name=$(basename "${path}")
-		fake_file_path="${PERSISTENT_DIR}/fake_files/${file_name}"
-
-		[[ ! -d "${PERSISTENT_DIR}/fake_files" ]] && mkdir -p "${PERSISTENT_DIR}/fake_files"
-		[[ ! -f "${fake_file_path}" ]] && {
-			touch "${fake_file_path}"
-		}
-
-		brene_clone_perm "${fake_file_path}" "${path}"
-		${SUSFS_BIN} add_open_redirect "${path}" "${fake_file_path}" '3'
-	done
-
-	find /system /system_ext /vendor /product -iname "*.rc" | while read -r path; do
-		if grep -iq "lineage" "${path}"; then
-			file_name=$(basename "${path}")
-			fake_file_path="${PERSISTENT_DIR}/fake_files/${file_name}"
-
-			[[ ! -d "${PERSISTENT_DIR}/fake_files" ]] && mkdir -p "${PERSISTENT_DIR}/fake_files"
-			[[ ! -f "${fake_file_path}" ]] && {
-				touch "${fake_file_path}"
-			}
-
-			brene_clone_perm "${fake_file_path}" "${path}"
-			${SUSFS_BIN} add_open_redirect "${path}" "${fake_file_path}" '3'
-		fi
-	done
-fi
-
 # Hide Suspicious PTYs
 if [[ "${config_hide_suspicious_pty}" == "1" ]]; then
 	if [[ "${config_brene_logs}" == "1" ]]; then
@@ -267,11 +221,25 @@ fi
 # Spoof /system/etc/hosts
 if [[ "${config_spoof_hosts}" == "1" ]]; then
 	path=/system/etc/hosts
+	file_name=$(basename "${path}")
+	fake_file_path="${PERSISTENT_DIR}/fake_files/${file_name}"
+
+	# Fork dlagia: isi persis /system/etc/hosts AOSP, 56 byte - sama dengan <size>
+	# di add_sus_kstat_statically di bawah. Upstream menaruh baris kosong sebelum EOF,
+	# jadi berkas palsunya 57 byte: stat bilang 56, read() memulangkan 57.
+	[[ ! -f "${fake_file_path}" ]] && {
+		cat <<- EOF > "${fake_file_path}"
+			127.0.0.1       localhost
+			::1             ip6-localhost
+		EOF
+	}
+
+	brene_open_redirect "${path}" "${fake_file_path}" '3'
 
 	# add_sus_kstat_statically </path/of/file_or_directory> <ino> <dev> <nlink> <size> <atime> <atime_nsec> <mtime> <mtime_nsec> <ctime> <ctime_nsec> <blocks> <blksize>
 	# ino -> %i, dev -> %d, nlink -> %h, atime -> %X, mtime -> %Y, ctime -> %Z, size -> %s, blocks -> %b, blksize -> %B
 	# Example: stat -c %i <path>
-	${SUSFS_BIN} add_sus_kstat_statically "${path}" '100' 'default' 'default' '64' 'default' 'default' 'default' 'default' 'default' 'default' '1' '4096'
+	${SUSFS_BIN} add_sus_kstat_statically "${path}" '100' 'default' 'default' '56' 'default' 'default' 'default' 'default' 'default' 'default' '1' '4096'
 fi
 
 ## System Property Spoofing
