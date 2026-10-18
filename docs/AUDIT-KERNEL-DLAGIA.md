@@ -4,6 +4,9 @@ Tanggal audit: 2026-09-21.
 Yang diaudit: `dlagia/BRENE` @ `b255fec` (identik dengan upstream `rrr333nnn333/BRENE` HEAD)
 terhadap kernel `dlagia/test` revisi ke-42c (run build `35499235046`, sukses).
 
+> Nilai di bagian 1-4 adalah keadaan 2026-09-21. Keadaan kernel terbaru dan cek
+> keselarasannya ada di [bagian 12](#12-cek-keselarasan-dengan-kernel-revisi-ke-89-2026-10-18).
+
 ## 1. Yang dipakai kernel ini
 
 | Komponen          | Nilai                                       | Sumber                       |
@@ -448,3 +451,61 @@ script modul dengan busybox ash.
 Lima issue terbuka di upstream tidak berubah sejak ronde keempat (#58, #57,
 #43, #25, #20), tanpa komentar baru. Tidak ada issue yang ditutup sejak
 2026-09-22. Issues di `dlagia/BRENE` tetap dimatikan.
+
+## 12. Cek keselarasan dengan kernel revisi ke-89 (2026-10-18)
+
+Yang dicek: `dlagia/BRENE` @ `2c59dfb` (`v0.0.71-dlagia.11`, sudah memuat upstream
+`d721c6a96` = HEAD `rrr333nnn333/BRENE`, fork 0 commit tertinggal) terhadap kernel
+`dlagia/test` revisi ke-89 (titik I, rilis `build-20261018-040930`, run `39095892421`).
+Kernel itu diflash dan boot normal 2026-10-18. Cek ini dibaca dari kode dan log build,
+bukan dari HP (HP tidak tersambung adb saat itu).
+
+| Komponen          | Nilai sekarang                                            | Sumber                                  |
+| ----------------- | --------------------------------------------------------- | --------------------------------------- |
+| Kernel            | Xiaomi rosemary, 4.14, NON-GKI                            | `KERNEL_PIN=602782da` (tidak berubah)   |
+| KernelSU          | BakaSU (eks-ReSukiSU) `6200478dd`, version code **35227** | log build: `BakaSU version code: 35227` |
+| SuSFS             | **v2.3.0**, varian **NON-GKI**                            | patch JackA1ltman `dcd78963`            |
+| Fitur SuSFS aktif | 9 dari 9                                                  | `out/.config` di log build              |
+
+Gerbang install `customize.sh`:
+
+| Syarat                             | Kernel ini | Status           |
+| ---------------------------------- | ---------- | ---------------- |
+| `$KSU` terisi (KernelSU atau fork) | BakaSU     | ✅               |
+| `$ARCH` = arm64                    | arm64      | ✅               |
+| `KSU_KERNEL_VER_CODE` ≥ 32336      | 35227      | ✅ (margin 2891) |
+| `susfs show version` diawali `v2`  | v2.3.0     | ✅               |
+
+Hasil:
+
+- **ABI SuSFS tidak berubah sejak `dlagia.11` diuji.** Nomor `CMD_SUSFS_*` di
+  `include/linux/susfs_def.h`, struct di `include/linux/susfs.h` dan `fs/susfs.c` di patch
+  `dcd78963` identik dengan patch `b5d7e5be6` (kernel titik D, tempat `dlagia.11` diflash
+  2026-10-13 dan boot normal). Beda patch-nya cuma hunk internal `clone_mnt` di
+  `fs/namespace.c`, yang tidak menyentuh antarmuka ke biner `susfs`.
+- **Biner `module/tools/susfs` cocok dengan struct kernel.** CLI-nya memakai
+  `add_open_redirect <target> <redirected> <uid_scheme>` dan `add_sus_kstat_statically`;
+  struct kernel punya `uid_scheme`, `is_statically` dan `flags` (`KSTAT_SPOOF_*`) untuk
+  keduanya.
+- **Ke-11 subperintah `susfs` yang benar-benar dijalankan BRENE punya CMD di kernel**
+  (`add_sus_path`, `add_sus_path_loop`, `add_sus_map`, `add_sus_kstat_statically`,
+  `add_open_redirect`, `set_uname`, `set_cmdline_or_bootconfig`, `enable_log`,
+  `enable_avc_log_spoofing`, `hide_sus_mnts_for_non_su_procs`, `show`), termasuk
+  `enable_avc_log_spoofing` (`0x60010`, dikompilasi tanpa syarat Kconfig) dan
+  `add_sus_map` (`0x60020`). Tiga sisanya di daftar bagian 3 (`add_sus_kstat`,
+  `update_sus_kstat`, `update_sus_kstat_full_clone`) cuma muncul di komentar contoh
+  `post-fs-data.sh`; CMD add/update kstat-nya tetap ada (`0x55570`, `0x55571`).
+- **Fitur: 9/9.** `out/.config` berisi kesembilan fitur di bagian 3. `susfs show enabled_features`
+  mencetak tepat sembilan baris itu, sama dengan `susfs_total_features=9`, jadi semua
+  pasangan di `cfg_needs` terpenuhi dan install tidak akan memberi peringatan.
+  `CONFIG_KSU_SUSFS_TRY_UMOUNT` tetap tidak masuk `.config` (simbol yatim, bagian 6).
+- **Perintah `ksud` masih ada di BakaSU `6200478dd`:** `module config set`,
+  `feature set su_compat|kernel_umount|selinux_hide`, `feature save`, `kernel umount add`,
+  `kernel notify-module-mounted`, `boot-info current-kmi`, dan `susfs config disable|enable`.
+
+Kesimpulan: BRENE `v0.0.71-dlagia.11` selaras dengan kernel revisi ke-89. Tidak ada
+perubahan modul yang dibutuhkan.
+
+Issue upstream terbaru: #59 (bootloop di firmware Samsung un1ca, bukan rosemary) dan #62
+(beberapa setelan sistem kembali menyala sesudah boot di HyperOS/LineageOS, bukan bootloop).
+Keduanya dicatat saja.
