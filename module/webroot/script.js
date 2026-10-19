@@ -72,7 +72,6 @@ const configs = [
 	{ id: 'spoof_cmdline_or_bootconfig' },
 	{ id: 'fix_data_local_tmp_inconsistencies' },
 	{ id: 'spoof_system_properties' },
-	{ id: 'spoof_system_properties_repeat' },
 	{ id: 'spoof_fingerprint_properties' },
 	{ id: 'spoof_utc_properties' },
 	{ id: 'spoof_date_properties' },

@@ -7,15 +7,17 @@ SUSFS_BIN=/data/adb/ksu/bin/susfs
 PERSISTENT_DIR=/data/adb/brene
 DEST_BIN_DIR=/data/adb/ksu/bin
 
-# Tambahan fork dlagia: boot-completed.sh menulis dua prop PERSIST (resetprop -p),
-# dan keduanya menyala secara default sejak upstream v0.0.71. Prop persist
-# bertahan sesudah modul dibongkar, jadi tanpa ini buffer logcat tetap 64K dan
+# Tambahan fork dlagia: sampai v0.0.71 boot-completed.sh menulis dua prop
+# PERSIST dengan `resetprop -p` (keduanya menyala secara default). Sejak v0.0.72
+# ditulis tanpa -p dan customize.sh membuang salinan tersimpan dari versi lama,
+# jadi baris di bawah tinggal jaring pengaman: prop persist yang tersimpan
+# bertahan sesudah modul dibongkar, dan tanpa ini buffer logcat tetap 64K dan
 # pembatasan proses anak tetap mati selamanya. Dihapus hanya kalau toggle-nya
 # menyala di config.sh (dibaca SEBELUM folder itu dihapus) DAN nilainya masih
 # persis nilai yang ditulis BRENE. Toggle mati = prop milik pemilik (mis. dari
 # Opsi Pengembang), dibiarkan.
 brene_toggle_on() {
-	grep -q "^$1=1" "${PERSISTENT_DIR}/config.sh" 2> /dev/null
+	[[ "$(grep -m1 "^$1=" "${PERSISTENT_DIR}/config.sh" 2> /dev/null | cut -d'=' -f2)" == "1" ]]
 }
 if brene_toggle_on config_shrink_buffer_size && [[ "$(getprop persist.logd.size)" == "65536" ]]; then
 	resetprop -p -d persist.logd.size

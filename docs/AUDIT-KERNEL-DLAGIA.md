@@ -509,3 +509,46 @@ perubahan modul yang dibutuhkan.
 Issue upstream terbaru: #59 (bootloop di firmware Samsung un1ca, bukan rosemary) dan #62
 (beberapa setelan sistem kembali menyala sesudah boot di HyperOS/LineageOS, bukan bootloop).
 Keduanya dicatat saja.
+
+## 13. Merge upstream v0.0.72 dan keselarasan dengan kernel revisi ke-91 (2026-10-19)
+
+Upstream `rrr333nnn333/BRENE` maju 9 commit (`d721c6a96..3cff142`, v0.0.72). Semuanya digabung
+lewat branch `audit-2026-10-19`; fork kembali 0 commit tertinggal.
+
+| Perubahan upstream                                     | Dampak di fork                                                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `resetprop -n -p` jadi `resetprop -n` (2 prop persist) | Prop cuma di memori. Salinan tersimpan dari versi lama dibuang `customize.sh` (lihat di bawah).                                 |
+| Toggle "Spoof System Properties Every Minute" dibuang  | Kuncinya hilang dari `config.sh`, `script.js` dan `index.html`; install fork membuang kunci usang dari config tersimpan.        |
+| Cadangan biner `susfs` di `/data/adb/brene`            | Dibuat `customize.sh`, dipulihkan `post-fs-data.sh` tiap boot, ikut terhapus `uninstall.sh` (`rm -rf /data/adb/brene`).         |
+| Hot install KernelSU menggantikan cara lama upstream   | BakaSU `6200478dd` maupun HEAD-nya tidak mengekspor `KSU_HAS_HOT_INSTALL`, jadi fork menyimpan cara lama sebagai cabang `else`. |
+| WebUI: tautan modul rekomendasi, Strong Keyboxes       | Tanpa dampak ke kernel.                                                                                                         |
+
+Perbaikan fork di atas v0.0.72:
+
+- `post-fs-data.sh` memulihkan biner SuSFS **sebelum** `susfs show variant` dibaca. Upstream
+  memulihkannya sesudahnya, jadi justru pada boot yang ia tangani (biner dihapus modul lain)
+  `SUSFS_VARIANT` kosong. Pemulihan juga dilewati kalau cadangannya tidak ada.
+- `customize.sh` membuang salinan tersimpan `persist.logd.size` dan
+  `persist.sys.fflag.override.settings_enable_monitor_phantom_procs` yang ditulis versi lama
+  dengan `-p`, hanya kalau toggle-nya menyala dan nilai tersimpannya persis nilai BRENE; nilai di
+  memori ditulis ulang. Tanpa ini, mematikan toggle-nya tidak pernah berlaku lagi. `resetprop`
+  BakaSU mendukung `-P` dan `-p -d` (`userspace/ksud/src/android/resetprop.rs`).
+- Cek toggle di `customize.sh` dan `uninstall.sh` membandingkan nilainya persis `1`; pola lama
+  `^kunci=1` juga cocok dengan `kunci=10`.
+
+Kernel yang dicek: `dlagia/test` revisi ke-91 (titik K, rilis `build-20261019-113325`, run
+`39245008340`), diflash dan boot normal 2026-10-19. Sejak titik I (bagian 12) yang berubah cuma
+`NOMOUNT_PIN` (`f59a077b3` -> `9e1cb15f1` -> `49be79a1a`); BRENE tidak memakai NoMount.
+`KSU_PIN` tetap `6200478dd` (version code **35227** di log build) dan `SUSFS_PIN` tetap
+`dcd78963`, jadi ABI SuSFS, ke-11 subperintah dan perintah `ksud` di bagian 12 tetap berlaku.
+Baris `CONFIG_KSU_SUSFS_*` di log build titik K sama persis dengan titik J (9 fitur aktif,
+`CONFIG_KSU_SUSFS_TRY_UMOUNT` tetap baris yatim dari defconfig, bagian 6). Biner
+`module/tools/susfs` tidak diubah upstream (ELF arm64).
+
+Gerbang audit `rilis-brene.yml` dijalankan lokal per step: semua lolos. `prettier --check` bersih.
+Logika baru diuji dengan stub `resetprop` di Git Bash (enam skenario toggle/nilai), bukan di HP.
+
+Issue upstream sejak bagian 12: #65 (`CURRENT_*` kosong di `config.sh` upstream; fork mengisinya
+lewat `update_config_date` dan "Reset Settings" sejak PR #6), #64 (dukungan LKM, kernel ini
+built-in), #63/#62 (RAM expansion ColorOS kembali menyala), #59 (bootloop Samsung juga di
+v0.0.71, bukan rosemary). Tidak ada bootloop yang menyangkut rosemary; semuanya dicatat saja.

@@ -75,7 +75,7 @@ fi
 
 # Disable Child Process Restrictions
 if [[ "${config_disable_child_process_restrictions}" == "1" ]]; then
-	resetprop -n -p persist.sys.fflag.override.settings_enable_monitor_phantom_procs false
+	resetprop -n persist.sys.fflag.override.settings_enable_monitor_phantom_procs false
 fi
 
 # Max Saturation
@@ -91,7 +91,7 @@ fi
 # Set logcat and logd buffer to 64K
 if [[ "${config_shrink_buffer_size}" == "1" ]]; then
 	logcat -G 64K
-	resetprop -n -p persist.logd.size 65536
+	resetprop -n persist.logd.size 65536
 fi
 
 # SELinux Enforcing
@@ -205,13 +205,6 @@ fi
 if [[ "${config_spoof_vendor_security_patch_level_property}" == "1" ]]; then
 	spoof_vendor_security_patch_level_property
 fi
-# Spoof System Properties Every Minute
-if [[ "${config_spoof_system_properties_repeat}" == "1" ]]; then
-	while true; do
-		sleep 60
-		spoof_system_properties
-	done &
-fi
 
 ## Remove the '..5.u.S' leftover ##
 ## THe reason why this sus file is created is because users have grant the MANAGE_EXTERNAL_STORAGE permission for the apps that detecting sus files in /storage/emulated/0, or in /storage/emulated/0/Android/data where the apps are exploiting the unicode bugs to create files arbitrary.
@@ -235,14 +228,14 @@ inotifyd "${MODDIR}/inotify.sh" /storage/emulated/0:n &
 
 # Paths Hiding
 
-# Hide Custom Recovery Paths
+# Hide Custom Recovery
 if [[ "${config_hide_custom_recovery}" == "1" ]]; then
 	if [[ "${config_brene_logs}" == "1" ]]; then
 		{
 			echo ""
-			echo "##########################"
-			echo "Hide Custom Recovery Paths"
-			echo "##########################"
+			echo "####################"
+			echo "Hide Custom Recovery"
+			echo "####################"
 		} >> "${PERSISTENT_DIR}/logs.txt"
 	fi
 
