@@ -552,3 +552,7 @@ Issue upstream sejak bagian 12: #65 (`CURRENT_*` kosong di `config.sh` upstream;
 lewat `update_config_date` dan "Reset Settings" sejak PR #6), #64 (dukungan LKM, kernel ini
 built-in), #63/#62 (RAM expansion ColorOS kembali menyala), #59 (bootloop Samsung juga di
 v0.0.71, bukan rosemary). Tidak ada bootloop yang menyangkut rosemary; semuanya dicatat saja.
+
+Hasil di perangkat: `v0.0.72-dlagia.12` (BRENE.zip 128.280 byte, run `39250541816`) diflash
+pemilik 2026-10-19 bersama kernel titik K dan boot normal. Rilis ini kini titik terpasang
+terbukti; mundur pertama `v0.0.71-dlagia.11`.
