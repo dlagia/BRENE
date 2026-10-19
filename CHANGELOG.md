@@ -2,20 +2,22 @@
 
 # Supports SuSFS 2.2.0 and 2.3.0+
 
-- improve: Spoof /system/etc/hosts: use open_redirect to spoof it as a stock hosts file
-- improve: simplify "Reset fake_files folder" code
-- fix: set ro.crypto.state after boot completed to preserve vendor crypto transition triggers (#61)
-- add: webui: UID Filter module
-- Merge branch 'main' of https://github.com/rrr333nnn333/BRENE
-- improve: webui: add some useful links to Recommended Modules
-- change: webui: move "Spoof /system/etc/hosts" to Custom ROM section
-- change: disable some options by default
-- change: webui: move "Custom Spoof Uname" to SuSFS section
-- improve: webui: add example for OPEN_REDIRECT and replace "/storage/emulated/0" with "/sdcard"
-- add: "Set logcat and logd buffer to 64K" toggle
+- improve: descriptions, text format and code logic in android options.
+- module: new description for BRENE.
+- improve: webui: replace "Play Integrity Fix" with "Play Integrity Fork" module.
+- improve: webui: add more useful links for recommended modules (telegram, nightly.link).
+- add: webui: Strong Keyboxes link.
+- improve: try to fix some issues on some devices by removing -p (--persistent) flag in resetprop.
+- drop: Spoof System Properties Every Minute if.
+- improve: backup/restore SuSFS binary if another module removes it.
+- improve: minimal WebUI changes.
+- add: support for KSU's Hot install; drop: own hot install implementation.
 
 # Fork dlagia
 
+- fix: binari SuSFS cadangan dipulihkan SEBELUM `susfs show variant` dibaca di post-fs-data, dan hanya kalau cadangannya ada
+- improve: installer tanpa hot install (BakaSU) tetap memasang modul langsung, jadi WebUI siap tanpa reboot seperti sebelumnya
+- fix: install membuang salinan tersimpan `persist.logd.size` / prop phantom procs yang ditulis versi lama dengan `resetprop -p`, supaya mematikan toggle-nya kembali berlaku sesudah reboot
 - fix: patch level tidak lagi di-spoof jadi `2026--01` pada tanggal 1-4 Agustus dan September (busybox ash membaca bulan `08`/`09` sebagai oktal)
 - fix: `CURRENT_DAY` ikut divalidasi, ikut diisi "Reset Settings" di WebUI, dan tahun/bulan/hari diambil dari satu panggilan `date`
 - fix: `custom_open_redirect.txt` dibaca lewat `brene_read_list` (baris terakhir tanpa newline tidak hilang, CR tidak ikut ke uid_scheme)

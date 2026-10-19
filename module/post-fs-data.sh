@@ -7,6 +7,19 @@ SUSFS_BIN=/data/adb/ksu/bin/susfs
 PERSISTENT_DIR=/data/adb/brene
 DEST_BIN_DIR=/data/adb/ksu/bin
 CUSTOM_ROM_NAMES="lineage|infinity|evolution|crdroid|mistos|axion|pixelos|rising|lunaris|halcyon|havoc|alphadroid|bliss|calyx|derpfest|graphene|lmodroid|lumine|matrixx|clover|yaap|aospa"
+
+# Restore SuSFS binary
+# Tambahan fork dlagia: dipindah ke sini dari bawah "Load config". Upstream
+# memulihkan binari SESUDAH `susfs show variant` dibaca, jadi justru pada boot
+# yang ia tangani (binari dihapus modul lain) SUSFS_VARIANT kosong dan spoof
+# cmdline/bootconfig mengambil cabang non-GKI. Cadangan dibuat customize.sh;
+# kalau tidak ada, binari yang terpasang dibiarkan apa adanya.
+if [[ -f "${PERSISTENT_DIR}/susfs" ]]; then
+	cp -pf "${PERSISTENT_DIR}/susfs" "${DEST_BIN_DIR}"
+	ln -sf "${DEST_BIN_DIR}/susfs" "${DEST_BIN_DIR}/sus"       # For development
+	ln -sf "${DEST_BIN_DIR}/susfs" "${DEST_BIN_DIR}/ksu_susfs" # For compatibility
+fi
+
 SUSFS_VARIANT=$(${SUSFS_BIN} show variant)
 
 # Load utils

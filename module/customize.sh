@@ -69,6 +69,9 @@ ${KSU_BIN} module config set override.description "[Status: ${status} | Kernel V
 echo "[✅] Preparing brene persistent directory (${PERSISTENT_DIR})"
 mkdir -p "${PERSISTENT_DIR}"
 
+# Backup SuSFS binary
+cp -pf "${DEST_BIN_DIR}/susfs" "${PERSISTENT_DIR}"
+
 files="
 custom_sus_map.txt
 custom_kernel_umount.txt
@@ -114,6 +117,22 @@ else
 fi
 
 update_config_date
+
+# Tambahan fork dlagia: sampai v0.0.71 boot-completed.sh menulis
+# persist.logd.size dan prop phantom procs dengan `resetprop -p`, jadi nilainya
+# tersimpan di /data/property. Sejak v0.0.72 keduanya ditulis tanpa -p (cuma di
+# memori, diulang tiap boot selama toggle menyala), tapi salinan tersimpan dari
+# versi lama tetap ada: mematikan toggle-nya tidak pernah berlaku lagi. Salinan
+# itu dihapus hanya kalau toggle-nya menyala dan nilai tersimpannya persis nilai
+# BRENE (aturan yang sama dengan uninstall.sh); nilai di memori ditulis ulang
+# supaya sesi sekarang tidak berubah.
+brene_drop_persisted() {
+	[[ "$(grep -m1 "^$1=" "${PERSISTENT_DIR}/config.sh" 2> /dev/null | cut -d'=' -f2)" == "1" ]] || return 0
+	[[ "$(resetprop -P "$2")" == "$3" ]] || return 0
+	resetprop -p -d "$2" && resetprop -n "$2" "$3" && echo "[✅] Removed stored copy of $2 written by older BRENE"
+}
+brene_drop_persisted config_shrink_buffer_size persist.logd.size 65536
+brene_drop_persisted config_disable_child_process_restrictions persist.sys.fflag.override.settings_enable_monitor_phantom_procs false
 
 # Reset fake_files folder
 [[ -d "${PERSISTENT_DIR}/fake_files" ]] && rm -rf "${PERSISTENT_DIR}/fake_files"
@@ -180,17 +199,26 @@ else
 	echo "[⚠️] ${missing_features} toggle tidak didukung kernel, matikan lewat WebUI atau bangun ulang kernel dengan fitur itu"
 fi
 
-# Enable WebUI without reboot
-MODDIR="/data/adb/modules/brene"
-MODULES_PATH="/data/adb/modules"
+# Hot install support
+if [[ "${KSU_HAS_HOT_INSTALL}" == true ]]; then
+	export MODULE_HOT_INSTALL_REQUEST=true
+else
+	# Tambahan fork dlagia: installer tanpa hot install (BakaSU/ReSukiSU belum
+	# mengekspor KSU_HAS_HOT_INSTALL) tetap memakai cara lama upstream sampai
+	# v0.0.71, yang sudah terbukti di perangkat: modul langsung dipasang ke
+	# /data/adb/modules supaya WebUI siap tanpa reboot. Tanpa cabang ini
+	# instalasi di BakaSU baru berlaku sesudah reboot.
+	MODDIR="/data/adb/modules/brene"
+	MODULES_PATH="/data/adb/modules"
 
-rm -rf "${MODDIR}"
-cp -rp "${MODPATH}" "${MODULES_PATH}"
+	rm -rf "${MODDIR}"
+	cp -rp "${MODPATH}" "${MODULES_PATH}"
 
-(
-	sleep 1
-	rm -rf "${MODPATH}"
-	rm "${MODDIR}/update"
-) & # fork in background
+	(
+		sleep 1
+		rm -rf "${MODPATH}"
+		rm "${MODDIR}/update"
+	) & # fork in background
 
-echo '[✅] WebUI is ready!'
+	echo '[✅] WebUI is ready!'
+fi
