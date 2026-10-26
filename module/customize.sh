@@ -39,6 +39,7 @@ fi
 
 cp -f "${MODPATH}/tools/susfs" "${DEST_BIN_DIR}"
 chmod +x "${MODPATH}/inotify.sh"
+chmod +x "${MODPATH}/remove_ksu_directory.sh"
 chmod 755 "${DEST_BIN_DIR}/susfs"
 ln -sf "${DEST_BIN_DIR}/susfs" "${DEST_BIN_DIR}/sus"       # For development
 ln -sf "${DEST_BIN_DIR}/susfs" "${DEST_BIN_DIR}/ksu_susfs" # For compatibility
@@ -203,11 +204,12 @@ fi
 if [[ "${KSU_HAS_HOT_INSTALL}" == true ]]; then
 	export MODULE_HOT_INSTALL_REQUEST=true
 else
-	# Tambahan fork dlagia: installer tanpa hot install (BakaSU/ReSukiSU belum
-	# mengekspor KSU_HAS_HOT_INSTALL) tetap memakai cara lama upstream sampai
-	# v0.0.71, yang sudah terbukti di perangkat: modul langsung dipasang ke
-	# /data/adb/modules supaya WebUI siap tanpa reboot. Tanpa cabang ini
-	# instalasi di BakaSU baru berlaku sesudah reboot.
+	# Tambahan fork dlagia: installer tanpa hot install tetap memakai cara lama
+	# upstream sampai v0.0.71, yang sudah terbukti di perangkat: modul langsung
+	# dipasang ke /data/adb/modules supaya WebUI siap tanpa reboot. BakaSU baru
+	# mengekspor KSU_HAS_HOT_INSTALL sejak c06e7ca16 (2026-10-24; sudah ada di
+	# KSU_PIN d5e9e025b, kernel rosemary revisi ke-95), jadi cabang ini tinggal
+	# untuk kernel lama (titik N ke bawah) dan fork KernelSU lain.
 	MODDIR="/data/adb/modules/brene"
 	MODULES_PATH="/data/adb/modules"
 

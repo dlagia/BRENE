@@ -15,7 +15,7 @@ brene_clone_perm() {
 	FROM=$2
 
 	if [[ -z "${TO}" ]] || [[ -z "${FROM}" ]]; then
-		return
+		return 1
 	fi
 
 	read -r permission owner group < <(busybox stat -c "%a %U %G" "${FROM}")

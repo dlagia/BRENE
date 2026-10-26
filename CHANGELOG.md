@@ -15,8 +15,12 @@
 
 # Fork dlagia
 
+- merge: upstream sesudah v0.0.72 (`3cff142..45fe52f`): toggle "Hide KernelSU directories", toggle "Hide third party apps" (`set_priority_uid_filter`), biner `susfs` susfs4ksu `35cbfe11`
+- fix: "Hide third party apps" menunggu penyimpanan CE user 0 siap (di latar, maks 300 detik) dan hanya mengirim app user 0; dulu satu paket yang belum bisa di-resolve kernel membuat seluruh daftar ditolak
+- fix: `remove_ksu_directory.sh` diberi shebang `/system/bin/sh` karena dieksekusi langsung oleh inotifyd, dan ikut menghapus direktori manager BakaSU (`com.resukisu.resukisu`)
+- improve: gerbang ORPHAN di workflow rilis memindai semua `module/*.sh` (kecuali `config.sh`), bukan daftar tetap
 - fix: binari SuSFS cadangan dipulihkan SEBELUM `susfs show variant` dibaca di post-fs-data, dan hanya kalau cadangannya ada
-- improve: installer tanpa hot install (BakaSU) tetap memasang modul langsung, jadi WebUI siap tanpa reboot seperti sebelumnya
+- improve: installer tanpa hot install (BakaSU sebelum `c06e7ca16`) tetap memasang modul langsung, jadi WebUI siap tanpa reboot seperti sebelumnya
 - fix: install membuang salinan tersimpan `persist.logd.size` / prop phantom procs yang ditulis versi lama dengan `resetprop -p`, supaya mematikan toggle-nya kembali berlaku sesudah reboot
 - fix: patch level tidak lagi di-spoof jadi `2026--01` pada tanggal 1-4 Agustus dan September (busybox ash membaca bulan `08`/`09` sebagai oktal)
 - fix: `CURRENT_DAY` ikut divalidasi, ikut diisi "Reset Settings" di WebUI, dan tahun/bulan/hari diambil dari satu panggilan `date`
