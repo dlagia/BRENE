@@ -1,7 +1,8 @@
 #!/system/bin/sh
 # shellcheck disable=SC2154
-# Fork dlagia: satu-satunya script modul yang DIEKSEKUSI langsung (oleh
-# inotifyd di boot-completed.sh), bukan dijalankan ksud lewat busybox sh.
+# Fork dlagia: script modul yang DIEKSEKUSI langsung (oleh inotifyd di
+# boot-completed.sh, sama seperti remove_ksu_directory.sh), bukan dijalankan
+# ksud lewat busybox sh.
 # Tanpa shebang, eksekusinya bergantung pada fallback ENOEXEC di execvp.
 # Shebang /bin/bash seperti script lain justru gagal: Android tidak punya
 # /bin/bash.

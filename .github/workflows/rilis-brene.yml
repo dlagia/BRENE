@@ -83,8 +83,11 @@ jobs:
           #   menyala (bug gerbang audit, ditemukan 2026-09-22).
           # - komentar dibuang dulu, karena komentar yang MEMBAHAS nama toggle (mis.
           #   mencatat toggle yang diganti nama upstream) bukan pemakaian.
-          for f in module/action.sh module/boot-completed.sh module/customize.sh \
-                   module/inotify.sh module/post-fs-data.sh module/uninstall.sh module/utils.sh; do
+          # - semua module/*.sh lain dipindai lewat glob, bukan daftar tetap:
+          #   script baru dari upstream (mis. remove_ksu_directory.sh, 2026-10-21)
+          #   otomatis ikut dihitung sebagai pemakai.
+          for f in module/*.sh; do
+            case "$f" in module/config.sh) continue ;; esac
             sed 's/[[:space:]]*#.*$//' "$f"
           done > /tmp/pemakai.txt
           sed 's|[[:space:]]*//.*$||' module/webroot/script.js >> /tmp/pemakai.txt
@@ -190,7 +193,8 @@ jobs:
           jadi tombol update di manager KernelSU mengambil dari fork ini, bukan dari upstream.
 
           Kernel yang diaudit untuk fork ini: rosemary 4.14 (dlagia/test), BakaSU (eks-ReSukiSU) sesuai pin
-          \`KSU_PIN\` di \`pins.env\` repo itu, SuSFS v2.3.0 NON-GKI, 9 fitur SuSFS aktif.
+          \`KSU_PIN\` di \`pins.env\` repo itu, SuSFS v2.3.0 NON-GKI, 9 fitur SuSFS aktif, ditambah
+          backport \`set_priority_uid_filter\` sejak revisi ke-95 (toggle \"Hide third party apps\").
           Rinciannya di \`docs/AUDIT-KERNEL-DLAGIA.md\`." \
             --latest \
             "BRENE.zip" "BRENE-${VERSION}.zip"

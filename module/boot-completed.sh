@@ -223,6 +223,14 @@ TARGET4="/storage/emulated/0/Android/obb/${TARGET}"
 rm -rf "${TARGET1}" "${TARGET2}" "${TARGET3}" "${TARGET4}"
 inotifyd "${MODDIR}/inotify.sh" /storage/emulated/0:n &
 
+# Hide KernelSU directories
+if [[ "${config_hide_ksu_directories}" == "1" ]]; then
+	sh "${MODDIR}/remove_ksu_directory.sh"
+	inotifyd "${MODDIR}/remove_ksu_directory.sh" /storage/emulated/0/Android/data:n &
+	inotifyd "${MODDIR}/remove_ksu_directory.sh" /storage/emulated/0/Android/media:n &
+	inotifyd "${MODDIR}/remove_ksu_directory.sh" /storage/emulated/0/Android/obb:n &
+fi
+
 ## For paths that are frequently modified, we can add them via 'add_sus_path_loop' ##
 ## Be reminded that without HMA's vold app data enabled, added sus_paths are still vulnerable to zwc exploit, so in this case users also have to add its underlying path as well ##
 
@@ -419,6 +427,31 @@ if [[ "${config_fix_data_local_tmp_inconsistencies}" == "1" ]]; then
 	# ino -> %i, dev -> %d, nlink -> %h, atime -> %X, mtime -> %Y, ctime -> %Z, size -> %s, blocks -> %b, blksize -> %B
 	# Example: stat -c %i <path>
 	${SUSFS_BIN} add_sus_kstat_statically "${target_folder}" '100' 'default' 'default' '4096' 'default' 'default' 'default' 'default' 'default' 'default' '8' '4096'
+fi
+
+# Hide third party apps
+if [[ "${config_hide_third_party_apps}" == "1" ]]; then
+	# Tambahan fork dlagia (diuji di kernel rosemary revisi ke-95, 2026-10-25):
+	# - Kernel mengambil uid tiap app dari pemilik /data/data/<paket>, yaitu
+	#   penyimpanan CE user 0. Sebelum layar dibuka sesudah boot, nama di sana
+	#   masih terenkripsi, dan SATU paket yang gagal membuat SELURUH daftar
+	#   ditolak (-ENOENT). Tunggu CE siap dulu, di latar dan paling lama 300
+	#   detik, supaya sisa script ini tidak tertahan di ROM tanpa prop itu.
+	# - Kernel hanya menerima uid 10000-19999 (user 0), jadi daftarnya user 0
+	#   saja. Tanpa --user 0, app yang cuma terpasang di user lain (Dual Apps
+	#   MIUI, profil kerja) ikut masuk dan seluruh daftar ditolak.
+	# - Daftar kosong ditolak kernel (-EINVAL), jadi tidak dikirim.
+	(
+		waited=0
+		until [[ "$(getprop sys.user.0.ce_available)" == "true" ]] || [[ "${waited}" -ge 300 ]]; do
+			sleep 1
+			waited=$((waited + 1))
+		done
+		packages=$(pm list packages -3 --user 0 | awk -F: '{out = out (out ? "," : "") $2} END {print out}')
+		if [[ -n "${packages}" ]]; then
+			${SUSFS_BIN} set_priority_uid_filter "${packages}"
+		fi
+	) &
 fi
 
 resetprop -c --force

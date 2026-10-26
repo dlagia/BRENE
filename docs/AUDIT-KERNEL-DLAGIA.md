@@ -5,7 +5,7 @@ Yang diaudit: `dlagia/BRENE` @ `b255fec` (identik dengan upstream `rrr333nnn333/
 terhadap kernel `dlagia/test` revisi ke-42c (run build `35499235046`, sukses).
 
 > Nilai di bagian 1-4 adalah keadaan 2026-09-21. Keadaan kernel terbaru dan cek
-> keselarasannya ada di [bagian 12](#12-cek-keselarasan-dengan-kernel-revisi-ke-89-2026-10-18).
+> keselarasannya ada di [bagian 14](#14-merge-upstream-sesudah-v0072-dan-keselarasan-dengan-kernel-revisi-ke-95-2026-10-26).
 
 ## 1. Yang dipakai kernel ini
 
@@ -556,3 +556,73 @@ v0.0.71, bukan rosemary). Tidak ada bootloop yang menyangkut rosemary; semuanya 
 Hasil di perangkat: `v0.0.72-dlagia.12` (BRENE.zip 128.280 byte, run `39250541816`) diflash
 pemilik 2026-10-19 bersama kernel titik K dan boot normal. Rilis ini kini titik terpasang
 terbukti; mundur pertama `v0.0.71-dlagia.11`.
+
+## 14. Merge upstream sesudah v0.0.72 dan keselarasan dengan kernel revisi ke-95 (2026-10-26)
+
+Upstream `rrr333nnn333/BRENE` maju 4 commit (`3cff142..45fe52f`, versi masih v0.0.72). Semuanya
+digabung lewat branch `audit-2026-10-26`; fork kembali 0 commit tertinggal.
+
+| Perubahan upstream                                             | Dampak di fork                                                                                                         |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Toggle "Hide KernelSU directories" (`remove_ksu_directory.sh`) | Diberi shebang (dieksekusi langsung oleh inotifyd) dan ditambah package manager BakaSU `com.resukisu.resukisu`.        |
+| Toggle "Hide third party apps" (`set_priority_uid_filter`)     | Butuh kernel dengan filter priority uid; kernel rosemary punya sejak revisi ke-95. Dua perbaikan fork, lihat di bawah. |
+| Biner `susfs` baru (24.392 byte)                               | Blob `d190bdefb` = `ksu_module_susfs/tools/ksu_susfs_arm64` susfs4ksu `35cbfe11`. Lihat ABI di bawah.                  |
+| WebUI: tautan modul "UID Filter" dibuang                       | Tanpa dampak ke kernel.                                                                                                |
+
+Perbaikan fork di atas upstream:
+
+- "Hide third party apps" menunggu `sys.user.0.ce_available` (di latar, paling lama 300 detik).
+  Kernel mengambil uid dari pemilik `/data/data/<paket>` (CE user 0), dan satu paket yang gagal
+  di-resolve membuat seluruh daftar ditolak (`-ENOENT`, `skip_failed=false` di
+  `susfs_set_priority_uid_filter`). Modul uji pemilik yang memakai perintah sama mencatat CE baru
+  siap sampai 76 detik sesudah boot-completed (2026-10-25).
+- Daftarnya diambil dengan `pm list packages -3 --user 0`. Kernel hanya menerima uid
+  10000-19999; app yang hanya terpasang di user lain (Dual Apps MIUI, profil kerja) membuat
+  seluruh daftar ditolak. Daftar kosong tidak dikirim (kernel menjawab `-EINVAL`).
+- `remove_ksu_directory.sh` diberi shebang `/system/bin/sh`, sama dengan `inotify.sh`.
+- Gerbang ORPHAN di `rilis-brene.yml` memindai semua `module/*.sh` kecuali `config.sh`; daftar
+  tetap yang lama tidak memuat `remove_ksu_directory.sh`.
+- Komentar cabang `else` hot install di `customize.sh` diperbarui: BakaSU mengekspor
+  `KSU_HAS_HOT_INSTALL` sejak `c06e7ca16` (2026-10-24), sudah ada di `KSU_PIN` `d5e9e025b`.
+  Di kernel revisi ke-95 install memakai jalur hot install KernelSU (direktori modul ditukar,
+  `sepolicy.rule` dimuat, tanpa script); cabang lama tinggal untuk kernel titik N ke bawah.
+- `prettier` 3.9.9 → 3.9.10.
+
+Kernel yang dicek: `dlagia/test` revisi ke-95 (titik O, rilis `build-20261025-043809`, run
+`40162359551`), diflash dan boot normal 2026-10-25. Dicek dari log build dan langsung di HP
+lewat adb (2026-10-26).
+
+| Komponen          | Nilai sekarang                                                | Sumber                                         |
+| ----------------- | ------------------------------------------------------------- | ---------------------------------------------- |
+| Kernel            | Xiaomi rosemary, 4.14.332, NON-GKI                            | `KERNEL_PIN=602782da` (tidak berubah)          |
+| KernelSU          | BakaSU `d5e9e025b`, version code **35253**                    | `ksud debug version` di HP                     |
+| SuSFS             | **v2.3.0**, NON-GKI + backport filter priority uid `35cbfe11` | patch JackA1ltman `dcd78963` + step workflow   |
+| Fitur SuSFS aktif | 9 dari 9                                                      | `susfs show enabled_features` di HP, log build |
+
+Hasil:
+
+- **ABI lama tidak berubah.** `SUSFS_PIN` tetap `dcd78963` sejak 2026-10-17, sebelum titik K
+  tempat `dlagia.12` diuji. Sumber `ksu_susfs` antara biner lama (`11769e52` = susfs4ksu
+  `43db79a9`) dan biner baru (`35cbfe11`) hanya beda penambahan `set_priority_uid_filter`
+  (`CMD 0x60030`, struct `app_strings[65535]` + `err`); perintah lain tidak tersentuh.
+- **`set_priority_uid_filter` cocok dengan kernel.** Backport revisi ke-95 memakai CMD dan struct
+  yang sama. Biner dengan blob yang sama sudah dipakai di HP 2026-10-25 (rc=0; uji ESRCH dari
+  uid app lulus).
+- **Gerbang install:** `KSU_KERNEL_VER_CODE` 35253 ≥ 32336 (margin 2917), `susfs show version`
+  = v2.3.0.
+- **Perintah `ksud` masih ada di BakaSU `d5e9e025b`** (dicek `--help` di HP): `module config set`,
+  `feature set|save`, `kernel umount add`, `kernel notify-module-mounted`,
+  `boot-info current-kmi`, `susfs config disable|enable`.
+- **Biner baru jalan di HP** (Android 13, SDK 33; catatan ELF "for Android 36" juga ada di biner
+  lama): `show version` = v2.3.0, `show variant` = NON-GKI, `show enabled_features` = 9 baris.
+  Dijalankan dari `/data/local/tmp`, lalu dihapus.
+- `CONFIG_KSU_SUSFS_TRY_UMOUNT=y` tetap baris yatim di log build (bagian 6).
+
+Gerbang audit `rilis-brene.yml` dijalankan lokal per step: semua lolos. `actionlint` dan
+`prettier --check` bersih. Modul uji pemilik `susfs_prio_filter` (perintah yang sama) sudah dihapus
+dari HP 2026-10-26; toggle "Hide third party apps" menggantikannya.
+
+Issue upstream sejak bagian 13: #66 (mount Zygisk terlihat; penyebabnya susfs-lkm, kernel ini
+built-in) dan #65 lanjutan (tanggal patch level 1970; `CURRENT_*` kosong di `config.sh` upstream,
+fork mengisinya sejak PR #6, bagian 13). Tidak ada bootloop yang menyangkut rosemary; semuanya
+dicatat saja.

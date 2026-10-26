@@ -185,18 +185,6 @@
 						</div>
 						<md-ripple></md-ripple>
 					</div>
-
-					<div class="card-row" data-module="cq_uid_seccomp">
-						<div class="card-row__body">
-							<span class="card-row__title">
-								<a href="https://github.com/longze777/UID-">UID Filter</a>
-								-
-								<a href="https://t.me/Suxiaomingpd">Telegram</a>
-							</span>
-							<span class="card-row__sub status-text">Status: Not installed</span>
-						</div>
-						<md-ripple></md-ripple>
-					</div>
 				</div>
 
 				<p class="section-label">Incompatible Modules</p>
@@ -295,6 +283,24 @@
 							<span class="card-row__title">Important Notes:</span>
 							<span class="card-row__sub">Only effective for umounted process with uid ≥ 10.000</span>
 						</div>
+						<md-ripple></md-ripple>
+					</div>
+
+					<div class="card-row">
+						<div class="card-row__body">
+							<span class="card-row__title">Hide KernelSU directories</span>
+							<span class="card-row__sub">E.g., /storage/emulated/0/Android/[data | obb | media]/me.weishu.kernelsu</span>
+						</div>
+						<md-switch icons id="hide_ksu_directories"></md-switch>
+						<md-ripple></md-ripple>
+					</div>
+
+					<div class="card-row">
+						<div class="card-row__body">
+							<span class="card-row__title">Hide third party apps</span>
+							<span class="card-row__sub">Hide them using set_priority_uid_filter, HMA-OSS is needed for userspace side</span>
+						</div>
+						<md-switch icons id="hide_third_party_apps"></md-switch>
 						<md-ripple></md-ripple>
 					</div>
 
