@@ -3,6 +3,8 @@
 # Fork dlagia: seperti inotify.sh, script ini DIEKSEKUSI langsung oleh inotifyd
 # di boot-completed.sh, jadi butuh shebang /system/bin/sh (alasannya di
 # inotify.sh). Pengganti `# shellcheck disable=SC2148` upstream.
+sleep 1
+
 remove_directory() {
 	if [[ -z "$1" ]]; then
 		return 1

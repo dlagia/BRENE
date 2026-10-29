@@ -626,3 +626,34 @@ Issue upstream sejak bagian 13: #66 (mount Zygisk terlihat; penyebabnya susfs-lk
 built-in) dan #65 lanjutan (tanggal patch level 1970; `CURRENT_*` kosong di `config.sh` upstream,
 fork mengisinya sejak PR #6, bagian 13). Tidak ada bootloop yang menyangkut rosemary; semuanya
 dicatat saja.
+
+## 15. Merge upstream v0.0.73 dan keselarasan dengan kernel revisi ke-99 (2026-10-29)
+
+Upstream `rrr333nnn333/BRENE` maju 5 commit (`45fe52f..70a57e2`, v0.0.73). Semuanya digabung lewat
+branch `audit-2026-10-29`; fork kembali 0 commit tertinggal.
+
+| Perubahan upstream                                     | Dampak di fork                                                                                                                                  |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Toggle "SELinux Enforcing" (`config_selinux`) dibuang  | Kunci lama di `/data/adb/brene/config.sh` dibuang saat install oleh pembersih kunci fork. Toggle kini 43. Rosemary memang sudah Enforcing.      |
+| `remove_ksu_directory.sh`: `sleep 1` sebelum menghapus | Digabung di bawah shebang fork. Mencegah manager KernelSU crash saat direktorinya dihapus tepat ketika dibuat. Boot-completed tertunda 1 detik. |
+| WebUI: 8 modul tak kompatibel baru, teks lebih ringkas | Hanya tampilan. Modul loader NoMount di HP ber-id `nomount`, bukan `meta-nomount`, jadi tidak ditandai.                                         |
+| Versi v0.0.73 (`versionCode` 73)                       | `update.json` fork ikut v0.0.73, URL tetap menunjuk `dlagia/BRENE`.                                                                             |
+
+Resolusi konflik: `CHANGELOG.md` (daftar upstream di atas, bagian fork di bawah), `update.json`
+(versi upstream, URL fork), `remove_ksu_directory.sh` (shebang fork + `sleep 1` upstream), dan
+`script.js`: helper `parseConfig` fork dipertahankan, teks toast upstream dipakai (`Failed to load`,
+`Reboot not required`), dan "Suspicious Mounts" memakai teks upstream `No mounts` dengan cek
+`trim()` fork (keluaran berisi newline saja tetap dihitung kosong).
+
+Kernel: `dlagia/test` revisi ke-99 (titik P, rilis `build-20261029-125858`), boot dikonfirmasi
+pemilik 2026-10-29. Dibanding titik O hanya ada `synchronize_rcu()` di filter priority uid (susfs4ksu
+`eb95da080`, internal kernel) dan NoMount `9c69668ee`; CMD dan struct `set_priority_uid_filter`
+tidak berubah. Biner `module/tools/susfs` (blob `d190bdefb`) masih sama dengan HEAD
+`ksu_susfs_arm64` di susfs4ksu `gki-android12-5.10` (commit terakhir yang menyentuhnya `35cbfe11`).
+
+Gerbang audit `rilis-brene.yml` dijalankan lokal per step: semua lolos. `actionlint` dan
+`prettier --check` bersih. Dependency sudah terbaru: `actions/checkout` v7.0.1, `prettier` 3.9.10,
+`prettier-plugin-sh` 0.20.2.
+
+Issue upstream sejak bagian 14: #59 mendapat laporan baru (Galaxy S20 FE, un1ca, gagal flash).
+Bukan rosemary; dicatat saja.

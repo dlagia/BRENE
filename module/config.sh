@@ -4,7 +4,6 @@ config_paths_hiding__data_local_tmp=1
 config_paths_hiding__non_standard_sdcard=0
 config_paths_hiding__non_standard_sdcard_android=1
 
-config_selinux=1
 config_su_compat=1
 config_spoof_uname=1
 config_selinux_hide=1
