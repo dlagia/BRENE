@@ -94,11 +94,6 @@ if [[ "${config_shrink_buffer_size}" == "1" ]]; then
 	resetprop -n persist.logd.size 65536
 fi
 
-# SELinux Enforcing
-if [[ "${config_selinux}" == "1" ]]; then
-	[[ "$(getenforce)" != "Enforcing" ]] && setenforce 1
-fi
-
 # Remove Custom ROM Properties
 if [[ "${config_rom_props}" == "1" ]]; then
 	# Fork dlagia: cocokkan NAMA prop saja. Versi upstream menjalankan grep atas
