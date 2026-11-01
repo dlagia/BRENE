@@ -689,6 +689,14 @@ hanya menambah `CMD_SUSFS_SET_PRIORITY_UID_FILTER 0x60030` dan `struct st_susfs_
 Gerbang audit `rilis-brene.yml` dijalankan lokal per step: semua lolos. `prettier --check` bersih. Dependency sudah
 terbaru: `actions/checkout` v7.0.1, `prettier` 3.9.10, `prettier-plugin-sh` 0.20.2.
 
+Hasil di perangkat: `v0.0.74-dlagia.15` (BRENE.zip 130.880 byte, run `41271986235`) diflash pemilik 2026-11-01
+bersama kernel titik W dan boot normal. Uji `tes_brene.sh` lewat adb (uptime 208 s): 69 PASS, 0 FAIL, 1 WARN (manager
+`com.resukisu.resukisu` terpasang, uji hidup direktorinya dilewati). Termasuk cek baru: `/proc/cmdline` terbaca
+`verifiedbootstate=green` sementara nilai asli di dmesg `orange` (cabang NON-GKI fork bekerja), `fake_cmdline` ditulis
+boot ini, direktori eksternal HMA OSS tidak ada, filter priority uid 17 app (app terdaftar ESRCH, app sistem EPERM),
+17 berkas terpasang identik dengan rilis. dmesg: 0 oops/BUG, satu WARNING vendor `sg_miter_stop` (sudah ada sebelumnya).
+Rilis ini kini titik terpasang terbukti; mundur pertama `v0.0.73-dlagia.14`.
+
 Issue upstream sejak bagian 15: #59 masih terbuka (Galaxy S20 FE dengan firmware tidak resmi un1ca; peringatan
 `risk.json` KernelSU-Next soal string `resusfs`). Bukan rosemary dan bukan BakaSU; dicatat saja. #65 ("1970 issue")
 sudah ditutup.
