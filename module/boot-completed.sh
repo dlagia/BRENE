@@ -436,13 +436,14 @@ if [[ "${config_hide_third_party_apps}" == "1" ]]; then
 	#   saja. Tanpa --user 0, app yang cuma terpasang di user lain (Dual Apps
 	#   MIUI, profil kerja) ikut masuk dan seluruh daftar ditolak.
 	# - Daftar kosong ditolak kernel (-EINVAL), jadi tidak dikirim.
+	# - `cmd package` mengikuti upstream 799e0f2ea (v0.0.74), --user 0 tetap.
 	(
 		waited=0
 		until [[ "$(getprop sys.user.0.ce_available)" == "true" ]] || [[ "${waited}" -ge 300 ]]; do
 			sleep 1
 			waited=$((waited + 1))
 		done
-		packages=$(pm list packages -3 --user 0 | awk -F: '{out = out (out ? "," : "") $2} END {print out}')
+		packages=$(cmd package list packages -3 --user 0 | awk -F: '{out = out (out ? "," : "") $2} END {print out}')
 		if [[ -n "${packages}" ]]; then
 			${SUSFS_BIN} set_priority_uid_filter "${packages}"
 		fi

@@ -2,16 +2,21 @@
 
 # Supports SuSFS 2.2.0 and 2.3.0+
 
-- add: new toggle "Hide KernelSU directories"
-- improve: update susfs binary to support "set_priority_uid_filter"
-- add: new toggle "Hide third party apps"
-- drop: webui: "UID Filter" module
-- improve: webui: more minimal changes
-- drop: "SELinux Enforcing" option
-- add: webui: new incompatible modules
+- fix: Hide KernelSU directories: KernelSU manager crash
+- add: webui: Re-Malwack module (Recommended)
+- improve: better use "cmd package" instead of "pm"
+- drop: Spoof /proc/[cmdline|bootconfig]: NON-GKI support
+- drop: KernelSU kernel version check
+- improve: only install on SuSFS 2.2.0, 2.3.0 and 2.4.0+
+- improve: disable other SuSFS module
+- add: webui: FuseHide module (Incompatible module)
+- add: webui: Tricky Store / TEESimulator-RS / AlwaysStrong (Incompatible modules)
+- improve: remove HMA OSS app external directory (temp)
 
 # Fork dlagia
 
+- merge: upstream v0.0.74 (`70a57e2..3ea96a6`): installer hanya menerima SuSFS v2.2.0/v2.3.0/v2.4.0 (kernel rosemary melapor `v2.3.0`), cek version code KernelSU dimatikan upstream, modul ReSuSFS ikut dimatikan, `remove_ksu_directory.sh` ikut menghapus direktori eksternal HMA OSS, `cmd package` menggantikan `pm`, WebUI: tombol "Check Play Integrity API", modul Re-Malwack dan modul tak kompatibel baru
+- keep: "Spoof /proc/[cmdline|bootconfig]" tetap mendukung NON-GKI (`/proc/cmdline`); upstream d445dda9f membuang cabang itu, padahal kernel rosemary 4.14 NON-GKI tanpa `/proc/bootconfig` dan cabang itulah yang membuat `verifiedbootstate=green` terbaca app (diuji di HP 2026-10-31)
 - merge: upstream v0.0.73 (`45fe52f..70a57e2`): toggle "SELinux Enforcing" (`config_selinux`) dibuang upstream, `remove_ksu_directory.sh` menunggu 1 detik sebelum menghapus (manager KernelSU crash), WebUI: modul tak kompatibel baru, teks lebih ringkas
 - merge: upstream sesudah v0.0.72 (`3cff142..45fe52f`): toggle "Hide KernelSU directories", toggle "Hide third party apps" (`set_priority_uid_filter`), biner `susfs` susfs4ksu `35cbfe11`
 - fix: "Hide third party apps" menunggu penyimpanan CE user 0 siap (di latar, maks 300 detik) dan hanya mengirim app user 0; dulu satu paket yang belum bisa di-resolve kernel membuat seluruh daftar ditolak

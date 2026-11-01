@@ -110,6 +110,10 @@ if [[ "${config_spoof_cmdline_or_bootconfig}" == "1" ]]; then
 		sed -i 's/androidboot.verifiedbootstate = "orange"/androidboot.verifiedbootstate = "green"/' "${FAKE_BOOTCONFIG}"
 		${SUSFS_BIN} set_cmdline_or_bootconfig "${FAKE_BOOTCONFIG}"
 	else
+		# Fork dlagia: cabang NON-GKI dipertahankan (upstream d445dda9f, v0.0.74,
+		# membuangnya). Kernel rosemary 4.14 NON-GKI tidak punya /proc/bootconfig;
+		# tanpa cabang ini /proc/cmdline tetap memuat verifiedbootstate=orange.
+		# Diuji di HP 2026-10-31 (kernel titik W): cmdline terbaca green.
 		FAKE_CMDLINE="${PERSISTENT_DIR}/fake_cmdline"
 
 		cat /proc/cmdline > "${FAKE_CMDLINE}"
