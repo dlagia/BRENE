@@ -657,3 +657,38 @@ Gerbang audit `rilis-brene.yml` dijalankan lokal per step: semua lolos. `actionl
 
 Issue upstream sejak bagian 14: #59 mendapat laporan baru (Galaxy S20 FE, un1ca, gagal flash).
 Bukan rosemary; dicatat saja.
+
+## 16. Merge upstream v0.0.74 dan keselarasan dengan kernel revisi ke-107 (2026-11-01)
+
+Upstream `rrr333nnn333/BRENE` maju 12 commit (`70a57e2..3ea96a6`, v0.0.74). Semuanya digabung lewat
+branch `audit-2026-11-01` KECUALI satu: cabang NON-GKI "Spoof /proc/[cmdline|bootconfig]" tetap ada.
+
+| Perubahan upstream                                                                                                                                               | Dampak di fork                                                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `d445dda9f` membuang cabang NON-GKI (`/proc/cmdline`) dari "Spoof /proc/[cmdline\|bootconfig]"                                                                   | TIDAK diikuti. Rosemary 4.14 NON-GKI tidak punya `/proc/bootconfig`; tanpa cabang ini `verifiedbootstate=orange` terbaca app. Di HP (titik W, 2026-10-31) cmdline terbaca `green`. |
+| Installer hanya menerima SuSFS `v2.2.0`, `v2.3.0`, `v2.4.0` (dulu `v2*`)                                                                                         | Kernel titik W melapor `SUSFS_VERSION "v2.3.0"` persis (patch 4.14 `16cb19cc2`), jadi lolos.                                                                                       |
+| Cek version code KernelSU (`>= 32336`) dimatikan                                                                                                                 | Tidak berpengaruh; BakaSU di HP 35258.                                                                                                                                             |
+| Modul `ReSuSFS` ikut dimatikan saat install                                                                                                                      | Tidak terpasang di HP.                                                                                                                                                             |
+| `remove_ksu_directory.sh` ikut menghapus `Android/{data,media,obb}/org.frknkrc44.hma_oss`                                                                        | Hanya saat toggle "Hide KernelSU directories" menyala. Config HMA OSS ada di `/data/misc/hide_my_applist_*`, tidak tersentuh.                                                      |
+| `cmd package` menggantikan `pm`                                                                                                                                  | Diikuti di blok "Hide third party apps" fork: `cmd package list packages -3 --user 0`, tunggu CE dan cek daftar kosong tetap.                                                      |
+| WebUI: tombol "Check Play Integrity API", Re-Malwack, modul tak kompatibel baru (FuseHide, Tricky Store, TEESimulator-RS, AlwaysStrong, Integrity Box, mountify) | Hanya tampilan.                                                                                                                                                                    |
+| Versi v0.0.74 (`versionCode` 74)                                                                                                                                 | `update.json` fork ikut v0.0.74, URL tetap menunjuk `dlagia/BRENE`.                                                                                                                |
+
+Resolusi konflik: `CHANGELOG.md` (daftar upstream di atas, bagian fork di bawah), `update.json` (versi upstream, URL fork),
+`remove_ksu_directory.sh` (baris HMA OSS upstream + manager BakaSU fork), `boot-completed.sh` (blok fork, perintah `cmd package`).
+`post-fs-data.sh` tidak konflik; perubahan upstream dibalik dan diberi komentar fork.
+
+Kernel: `dlagia/test` revisi ke-107 (titik W, rilis `build-20261031-162331`), boot dikonfirmasi pemilik 2026-10-31.
+Revisi ke-108 hanya mengubah komentar dan tabel di workflow; kodenya dibuktikan byte-setara titik W. Dibanding titik P
+(bagian 15), patch SuSFS 4.14 upstream kini membawa sendiri filter priority uid: header `susfs_def.h`/`susfs.h` titik W
+hanya menambah `CMD_SUSFS_SET_PRIORITY_UID_FILTER 0x60030` dan `struct st_susfs_priority_uid_filter`
+(`app_strings[65535]`, `err`), sama dengan yang dulu dipasang workflow. Nomor CMD lain tidak berubah. Biner
+`module/tools/susfs` (blob `d190bdefb`) masih sama dengan HEAD `ksu_module_susfs/tools/ksu_susfs_arm64` di susfs4ksu
+`gki-android12-5.10`.
+
+Gerbang audit `rilis-brene.yml` dijalankan lokal per step: semua lolos. `prettier --check` bersih. Dependency sudah
+terbaru: `actions/checkout` v7.0.1, `prettier` 3.9.10, `prettier-plugin-sh` 0.20.2.
+
+Issue upstream sejak bagian 15: #59 masih terbuka (Galaxy S20 FE dengan firmware tidak resmi un1ca; peringatan
+`risk.json` KernelSU-Next soal string `resusfs`). Bukan rosemary dan bukan BakaSU; dicatat saja. #65 ("1970 issue")
+sudah ditutup.
