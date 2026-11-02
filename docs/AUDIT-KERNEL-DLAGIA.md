@@ -761,3 +761,32 @@ disesuaikan; penjaganya tetap. `tes_brene.sh` kini memeriksa bahwa prop tiap par
 
 Issue upstream sejak bagian 16: #65 ("1970 issue") ditutup lewat `ef9f963`; #57 dan #25 (adb) ditutup. #59 masih
 terbuka (Galaxy S20 FE, firmware tidak resmi), bukan rosemary.
+
+### 17.2 Hasil di perangkat: dlagia.17
+
+`v0.0.75-dlagia.17` (BRENE.zip 130.615 byte, run `41464876611`) diflash pemilik 2026-11-02 bersama kernel titik AB
+dan boot normal. Uji lewat adb (uptime 230 s):
+
+- `tes_brene.sh`: 76 PASS, 0 FAIL, 1 WARN (manager `com.resukisu.resukisu` terpasang). 17 berkas identik dengan
+  rilis, 40 toggle, tiga kunci spoof lama sudah dibuang installer dari `/data/adb/brene/config.sh`, deskripsi
+  `v2.3.0 (NON-GKI)` dan `10/10`.
+- Prop fingerprint/date tiap partisi sama dengan nilai asli ROM (20 prop). Catatan cara mengukurnya: MIUI stok
+  `/vendor/build.prop` dan `/odm/etc/build.prop` mengimpor `/vendor/${ro.boot.product.vendor.sku}.build.prop` dan
+  `/vendor/odm/etc/${ro.boot.product.vendor.sku}.build.prop`, yang mendefinisikan ulang fingerprint vendor/odm jadi
+  `Redmi/rosemary_global/rosemary:12/SP1A...`. Skrip uji kini mengikuti `import` (definisi terakhir menang).
+- `ro.bootimage.*` dan `ro.product.bootimage.*` berasal dari ramdisk boot, yang di HP ini TWRP:
+  `Xiaomi/twrp_rosemary/rosemary:15/...:eng/test-keys`, `build.type=eng`, `build.tags=test-keys`. Prop itu
+  TIDAK terbaca app: dari konteks `untrusted_app` (uid 10263 dan 10013) `getprop` kosong dan audit mencatat
+  `avc: denied { read } ... tcontext=u:object_r:build_bootimage_prop:s0 ... permissive=0`, sementara
+  `ro.build.type` terbaca `user`. dlagia.16 menimpa tiga di antaranya (fingerprint, date, date.utc), tapi
+  `type`/`tags`/`name` tetap TWRP di kedua rilis; yang menutupnya dari app adalah SELinux, bukan BRENE.
+  `tes_brene.sh` memeriksa ini setiap uji (kontrol: konteks yang sama membaca `ro.build.type`).
+- Duck Detector: Danger 2 (ADB Runtime karena USB debugging, timing SELinux app_zygote), Warning 0, sama dengan uji
+  A/B di 17.1.
+- Kernel: `tes_susfs.sh --worker` 14/14, sapu filter uid 36/36, sapu kebocoran untrusted_app identik titik Z
+  (kecuali sufiks uname acak per boot). dmesg 15-242 s: 0 oops/BUG/stall; satu `WARN_ONCE` vendor MTK baru
+  `uclamp_group_get` (`kernel/sched/core.c:1568`, dipicu tulisan powerhal ke `perfmgr .../ta_uclamp_min` di
+  177 s; kodenya langsung me-nol-kan refcount yang salah). Tidak menyentuh SuSFS, KernelSU, NoMount atau BRENE,
+  dan tidak ada di 12 tangkapan dmesg sebelumnya.
+
+Rilis ini kini titik terpasang terbukti; mundur pertama `v0.0.75-dlagia.16`.
