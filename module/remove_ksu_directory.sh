@@ -18,8 +18,7 @@ remove_directory() {
 
 remove_directory "me.weishu.kernelsu"
 remove_directory "com.rifsxd.ksunext"
-remove_directory "org.frknkrc44.hma_oss"
-# Tambahan fork dlagia: package bawaan manager BakaSU (eks-ReSukiSU), KernelSU
-# di kernel rosemary dlagia/test (defaultManagerPackageName di
-# manager/build.gradle.kts). Manager dengan package acak tidak bisa ditebak.
 remove_directory "com.resukisu.resukisu"
+remove_directory "com.sukisu.ultra"
+remove_directory "org.frknkrc44.hma_oss"
+remove_directory "com.termux"

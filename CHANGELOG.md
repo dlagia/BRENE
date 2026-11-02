@@ -1,20 +1,27 @@
 # Changelog
 
-# Supports SuSFS 2.2.0 and 2.3.0+
+# Supports SuSFS 2.2.0, 2.3.0 and 2.3.0+
 
-- fix: Hide KernelSU directories: KernelSU manager crash
-- add: webui: Re-Malwack module (Recommended)
-- improve: better use "cmd package" instead of "pm"
-- drop: Spoof /proc/[cmdline|bootconfig]: NON-GKI support
-- drop: KernelSU kernel version check
-- improve: only install on SuSFS 2.2.0, 2.3.0 and 2.4.0+
-- improve: disable other SuSFS module
-- add: webui: FuseHide module (Incompatible module)
-- add: webui: Tricky Store / TEESimulator-RS / AlwaysStrong (Incompatible modules)
-- improve: remove HMA OSS app external directory (temp)
+- add: webui: "Check Play Integrity API" button
+- add: new incompatible modules (Integrity Box, mountify)
+- add: new incompatible modules (fgetpriority, Tricky Store OSS, Oh My Keymint, Yurikey Manager, ZNNext)
+- add: SuSFS variant to module description
+- improve: webui: move "Check Play Integrity API" button to HOME section
+- add: webui: Material Files to Recommendations
+- improve: update susfs_total_features value to 10 (CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER)
+- improve: webui: Check PI API: use "cmd activity" instead of "am" and use force-stop ${PKG} before start ${PKG}/.MainActivity
+- improve: webui: use "cmd activity" instead of "am" for all code
+- improve: webui: add Advanced separator
+- improve: remove Termux and BakaSU/ReSukiSU app external directory
+- improve: remove SukiSU Ultra app external directory
+- improve: move update_config_date function call atfer /storage/emulated/0/Android is accessible
+- drop: Spoof UTC/date/fingerprint properties
 
 # Fork dlagia
 
+- merge: upstream v0.0.75 (`3ea96a6..ca4b4f5`): varian SuSFS di deskripsi modul (`susfs show variant`; kernel rosemary melapor `NON-GKI`), `susfs_total_features` 10 (`CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER`, ada di kernel rosemary sejak dlagia/test revisi ke-114), `remove_ksu_directory.sh` ikut menghapus direktori eksternal SukiSU Ultra dan Termux, WebUI: `cmd activity` menggantikan `am`, Material Files, pemisah Advanced, modul tak kompatibel baru
+- keep: toggle "Spoof fingerprint/UTC/date properties" tetap ada; upstream afc5620 membuangnya, padahal ROM AxionOS rosemary punya prop `*.build.fingerprint` berisi `axion_rosemary` (docs bagian 10.2) dan app membaca fingerprint stok seragam di semua partisi hanya karena toggle itu (Duck Detector 2026-10-31/11-01)
+- fix: `update_config_date` tetap dipanggil sebelum spoof patch level di boot-completed (upstream v0.0.75 memindahnya ke akhir script, jadi boot itu memakai tanggal boot sebelumnya), tetap sesudah `/storage/emulated/0/Android` siap
 - merge: upstream v0.0.74 (`70a57e2..3ea96a6`): installer hanya menerima SuSFS v2.2.0/v2.3.0/v2.4.0 (kernel rosemary melapor `v2.3.0`), cek version code KernelSU dimatikan upstream, modul ReSuSFS ikut dimatikan, `remove_ksu_directory.sh` ikut menghapus direktori eksternal HMA OSS, `cmd package` menggantikan `pm`, WebUI: tombol "Check Play Integrity API", modul Re-Malwack dan modul tak kompatibel baru
 - keep: "Spoof /proc/[cmdline|bootconfig]" tetap mendukung NON-GKI (`/proc/cmdline`); upstream d445dda9f membuang cabang itu, padahal kernel rosemary 4.14 NON-GKI tanpa `/proc/bootconfig` dan cabang itulah yang membuat `verifiedbootstate=green` terbaca app (diuji di HP 2026-10-31)
 - merge: upstream v0.0.73 (`45fe52f..70a57e2`): toggle "SELinux Enforcing" (`config_selinux`) dibuang upstream, `remove_ksu_directory.sh` menunggu 1 detik sebelum menghapus (manager KernelSU crash), WebUI: modul tak kompatibel baru, teks lebih ringkas
