@@ -100,9 +100,9 @@ if [[ "${config_rom_props}" == "1" ]]; then
 	# ikut terhapus: ro.build.fingerprint, ro.product.name ("axion_rosemary"),
 	# ro.build.display.id, ro.build.flavor, ro.build.description. Prop stok yang
 	# kosong jauh lebih mencurigakan daripada nama ROM-nya, dan Build.PRODUCT
-	# kosong bisa membuat app gagal mengenali perangkat. Fingerprint diurus
-	# spoof_fingerprint_properties; penjaganya tetap dipasang kalau suatu saat
-	# nama ROM masuk ke nama prop fingerprint.
+	# kosong bisa membuat app gagal mengenali perangkat. Penjaga fingerprint di
+	# bawah tetap dipasang kalau suatu saat nama ROM masuk ke nama prop
+	# fingerprint: fingerprint kosong lebih mencolok daripada nama ROM-nya.
 	resetprop | awk -F'[][]' '{print $2}' | grep -iE "${CUSTOM_ROM_NAMES}" | while read -r prop; do
 		[[ "${prop}" == *build.fingerprint ]] && continue
 		resetprop -d "${prop}"
@@ -184,18 +184,6 @@ if [[ "${config_spoof_system_properties}" == "1" ]]; then
 
 	# set after vold settles so the encrypted transition still reaches vendor init triggers
 	if_prop_exits_resetprop_n "ro.crypto.state" "encrypted"
-fi
-# Spoof Fingerprint Properties
-if [[ "${config_spoof_fingerprint_properties}" == "1" ]]; then
-	spoof_fingerprint_properties
-fi
-# Spoof UTC Properties
-if [[ "${config_spoof_utc_properties}" == "1" ]]; then
-	spoof_utc_properties
-fi
-# Spoof Date Properties
-if [[ "${config_spoof_date_properties}" == "1" ]]; then
-	spoof_date_properties
 fi
 # Spoof OS Security Patch Level Property
 if [[ "${config_spoof_os_security_patch_level_property}" == "1" ]]; then

@@ -704,17 +704,18 @@ sudah ditutup.
 ## 17. Merge upstream v0.0.75 dan keselarasan dengan kernel revisi ke-115 (2026-11-02)
 
 Upstream `rrr333nnn333/BRENE` maju 13 commit (`3ea96a6..ca4b4f5`, v0.0.75). Semuanya digabung lewat
-branch `audit-2026-11-02` KECUALI satu: toggle "Spoof fingerprint/UTC/date properties" tetap ada.
+branch `audit-2026-11-02` KECUALI satu: toggle "Spoof fingerprint/UTC/date properties" tetap ada (dlagia.16; dikoreksi di 17.1, dlagia.17
+ikut upstream).
 
-| Perubahan upstream                                                                                                                                                            | Dampak di fork                                                                                                                                                                                                                                                                                                                                |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `afc5620` membuang toggle "Spoof fingerprint/UTC/date properties" (tanpa alasan di commit)                                                                                    | TIDAK diikuti. ROM AxionOS rosemary punya prop `*.build.fingerprint` berisi `axion_rosemary` (bagian 10.2); Duck Detector 2026-10-31/11-01 membaca fingerprint stok `Redmi/rosemary_global/...:user/release-keys` seragam di system dan vendor. Tanpa bukti di HP bahwa toggle ini tidak berbuat apa-apa, membuangnya bisa membuka kebocoran. |
-| `ef9f963` memindah `update_config_date` ke akhir `boot-completed.sh` (issue upstream #65)                                                                                     | Dipindah ke tepat sesudah tunggu `/storage/emulated/0/Android`, tapi SEBELUM spoof patch level. Di akhir script, boot itu memakai tanggal boot sebelumnya. Jam belum tersinkron (1970) sudah ditolak fork sejak dulu (`year -ge 2025`, `patch_date_valid`).                                                                                   |
-| `8be7176` varian SuSFS di deskripsi modul (`susfs show variant`)                                                                                                              | Kernel 4.14 punya `susfs_show_variant` (patch `f59ce26a1`: `SUSFS_VARIANT "NON-GKI"`); biner `module/tools/susfs` sudah punya perintah `show variant`.                                                                                                                                                                                        |
-| `d800999` `susfs_total_features` 9 -> 10 (`CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER`)                                                                                             | Selaras: sejak `dlagia/test` revisi ke-114 opsi itu ada di Kconfig, menyala di defconfig, dan fixer workflow menambah barisnya ke `enabled_features`. Kernel titik AB = 10 baris, jadi deskripsi `10/10`. Dengan `v0.0.74-dlagia.15` deskripsinya `10/9`.                                                                                     |
-| `ffe5267`, `fc2990b` `remove_ksu_directory.sh` ikut menghapus `com.resukisu.resukisu`, `com.sukisu.ultra`, `com.termux`                                                       | Baris ReSukiSU fork kini dari upstream, komentar fork dibuang. Hanya saat toggle "Hide KernelSU directories" menyala; shebang fork tetap.                                                                                                                                                                                                     |
-| WebUI: `cmd activity` menggantikan `am`, Material Files, pemisah Advanced, modul tak kompatibel baru (fgetpriority, Tricky Store OSS, Oh My Keymint, Yurikey Manager, ZNNext) | Hanya tampilan. Tiga switch fork ditaruh kembali sesudah "Spoof system properties".                                                                                                                                                                                                                                                           |
-| Versi v0.0.75 (`versionCode` 75)                                                                                                                                              | `update.json` fork ikut v0.0.75, URL tetap menunjuk `dlagia/BRENE`.                                                                                                                                                                                                                                                                           |
+| Perubahan upstream                                                                                                                                                            | Dampak di fork                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `afc5620` membuang toggle "Spoof fingerprint/UTC/date properties" (tanpa alasan di commit)                                                                                    | TIDAK diikuti di dlagia.16 (dikoreksi di 17.1). ROM AxionOS rosemary punya prop `*.build.fingerprint` berisi `axion_rosemary` (bagian 10.2); Duck Detector 2026-10-31/11-01 membaca fingerprint stok `Redmi/rosemary_global/...:user/release-keys` seragam di system dan vendor. Tanpa bukti di HP bahwa toggle ini tidak berbuat apa-apa, membuangnya bisa membuka kebocoran. |
+| `ef9f963` memindah `update_config_date` ke akhir `boot-completed.sh` (issue upstream #65)                                                                                     | Dipindah ke tepat sesudah tunggu `/storage/emulated/0/Android`, tapi SEBELUM spoof patch level. Di akhir script, boot itu memakai tanggal boot sebelumnya. Jam belum tersinkron (1970) sudah ditolak fork sejak dulu (`year -ge 2025`, `patch_date_valid`).                                                                                                                    |
+| `8be7176` varian SuSFS di deskripsi modul (`susfs show variant`)                                                                                                              | Kernel 4.14 punya `susfs_show_variant` (patch `f59ce26a1`: `SUSFS_VARIANT "NON-GKI"`); biner `module/tools/susfs` sudah punya perintah `show variant`.                                                                                                                                                                                                                         |
+| `d800999` `susfs_total_features` 9 -> 10 (`CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER`)                                                                                             | Selaras: sejak `dlagia/test` revisi ke-114 opsi itu ada di Kconfig, menyala di defconfig, dan fixer workflow menambah barisnya ke `enabled_features`. Kernel titik AB = 10 baris, jadi deskripsi `10/10`. Dengan `v0.0.74-dlagia.15` deskripsinya `10/9`.                                                                                                                      |
+| `ffe5267`, `fc2990b` `remove_ksu_directory.sh` ikut menghapus `com.resukisu.resukisu`, `com.sukisu.ultra`, `com.termux`                                                       | Baris ReSukiSU fork kini dari upstream, komentar fork dibuang. Hanya saat toggle "Hide KernelSU directories" menyala; shebang fork tetap.                                                                                                                                                                                                                                      |
+| WebUI: `cmd activity` menggantikan `am`, Material Files, pemisah Advanced, modul tak kompatibel baru (fgetpriority, Tricky Store OSS, Oh My Keymint, Yurikey Manager, ZNNext) | Hanya tampilan. Tiga switch fork ditaruh kembali sesudah "Spoof system properties".                                                                                                                                                                                                                                                                                            |
+| Versi v0.0.75 (`versionCode` 75)                                                                                                                                              | `update.json` fork ikut v0.0.75, URL tetap menunjuk `dlagia/BRENE`.                                                                                                                                                                                                                                                                                                            |
 
 Resolusi konflik: `CHANGELOG.md` (daftar upstream di atas, bagian fork di bawah), `update.json` (versi upstream, URL fork),
 `remove_ksu_directory.sh` (daftar upstream, shebang fork), `utils.sh` (fungsi fork utuh, termasuk tiga fungsi spoof).
@@ -728,9 +729,35 @@ Gerbang audit `rilis-brene.yml` dijalankan lokal per step: semua lolos (toggle 4
 bersih, `shellcheck -S warning` hanya SC2034 boilerplate. Dependency sudah terbaru: `actions/checkout` v7.0.1,
 `prettier` 3.9.10, `prettier-plugin-sh` 0.20.2.
 
-Uji di HP belum dikerjakan (HP tidak tersambung). Yang perlu dicek: deskripsi `v2.3.0 (NON-GKI)` dan `10/10`,
-`CURRENT_*` di `config.sh` = tanggal hari ini sesudah boot, dan nilai `ro.*build.fingerprint` / `ro.*build.date*`
-semua partisi seragam.
+Hasil di perangkat: `v0.0.75-dlagia.16` diflash pemilik 2026-11-02 bersama kernel titik AB (`build-20261102-132157`)
+dan boot normal. Uji lewat adb (uptime 105-300 s): `tes_brene.sh` 74 PASS, 0 FAIL, 1 WARN (manager
+`com.resukisu.resukisu` terpasang); deskripsi `SuSFS: v2.3.0 (NON-GKI)` dan `10/10`, `CURRENT_*` = 2026-11-02,
+17 berkas identik dengan rilis. `tes_susfs.sh --worker` 13/13 (ekspektasi fitur skrip uji dinaikkan 9 -> 10).
+Sapu kebocoran dari konteks untrusted_app (Key Attestation 10263, Duck Detector 10013) identik titik Z; sapu uid
+filter priority 35/35. dmesg: 0 oops/BUG/stall, 9 WARNING vendor MTK yang sama.
+
+### 17.1 Koreksi: spoof fingerprint/UTC/date ikut dibuang (dlagia.17)
+
+Alasan mempertahankan toggle itu di dlagia.16 ternyata basi: catatan AxionOS di bagian 10.2 berasal dari ROM
+lama. ROM di HP sekarang MIUI stok `V14.0.11.0.TKLMIXM`. Nilai asli di berkas `build.prop` tiap partisi:
+
+| Partisi                  | fingerprint asli                                        | `date.utc` asli |
+| ------------------------ | ------------------------------------------------------- | --------------- |
+| system, system_ext       | `Xiaomi/missi/missi:13/TP1A.220624.014/...`             | 1720520578      |
+| product                  | `Xiaomi/miproduct_rosemary_global/missi:13/...`         | 1720520582      |
+| vendor, odm, vendor_dlkm | `Redmi/rosemary/rosemary:12/SP1A.210812.016/...`        | 1720521678      |
+| `ro.build.fingerprint`   | `Redmi/rosemary_global/rosemary:13/TP1A.220624.014/...` | 1720520578      |
+
+Toggle itu menyalin `ro.build.fingerprint`/`date`/`date.utc` ke semua partisi, jadi justru MENYIMPANG dari HP
+stok asli (vendor Android 12 jadi terbaca 13). Uji A/B Duck Detector pada boot yang sama: laporan dengan nilai
+spoof dan laporan sesudah nilai asli dipasang lagi (`resetprop -n` dari berkas `build.prop`, lalu dipulihkan)
+punya vonis identik: Danger 2 (ADB Runtime karena USB debugging, timing SELinux app_zygote; keduanya temuan
+lama), Warning 0, "Cross-check rules: Aligned". Yang berbeda hanya nilai yang ditampilkan. Jadi toggle itu
+tidak menyembunyikan apa pun di perangkat ini, dan `afc5620` upstream diikuti: `config.sh` dan `index.html`
+kini sama persis dengan upstream. Installer fork membuang ketiga kunci lama dari
+`/data/adb/brene/config.sh` (toggle yatim). Komentar penjaga fingerprint di "Remove Custom ROM Properties"
+disesuaikan; penjaganya tetap. `tes_brene.sh` kini memeriksa bahwa prop tiap partisi sama dengan berkas
+`build.prop`-nya.
 
 Issue upstream sejak bagian 16: #65 ("1970 issue") ditutup lewat `ef9f963`; #57 dan #25 (adb) ditutup. #59 masih
 terbuka (Galaxy S20 FE, firmware tidak resmi), bukan rosemary.
