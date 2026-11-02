@@ -4,9 +4,8 @@
 > (rosemary 4.14, BakaSU (eks-ReSukiSU) + SuSFS v2.3.0 NON-GKI). Bedanya dengan upstream: `updateJson`/`zipUrl`
 > menunjuk fork ini, ada workflow rilis otomatis, `customize.sh` menyerahkan kendali SuSFS
 > dari manajer bawaan ksud ke BRENE, dan di installer tanpa hot install (BakaSU) modul tetap
-> langsung terpasang tanpa reboot, "Spoof /proc/cmdline" tetap mendukung kernel NON-GKI
-> (upstream membuangnya di v0.0.74), dan toggle "Spoof fingerprint/UTC/date properties" tetap ada
-> (upstream membuangnya di v0.0.75). Hasil auditnya ada di
+> langsung terpasang tanpa reboot, dan "Spoof /proc/cmdline" tetap mendukung kernel NON-GKI
+> (upstream membuangnya di v0.0.74). Hasil auditnya ada di
 > [`docs/AUDIT-KERNEL-DLAGIA.md`](./docs/AUDIT-KERNEL-DLAGIA.md).
 
 This module is used for installing a userspace helper tool called ksu_susfs and susfs (They are the same binary) into /data/adb/ksu/bin/ to communicate with SUSFS kernel.
